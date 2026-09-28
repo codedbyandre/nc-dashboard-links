@@ -21,6 +21,7 @@ use OCA\DashboardLinks\Links\InvalidLink;
 use OCA\DashboardLinks\Links\LinkId;
 use OCA\DashboardLinks\Links\LinkUrls;
 use OCA\DashboardLinks\Links\StaleCatalog;
+use OCA\DashboardLinks\Links\UnreadableCatalog;
 use OCA\DashboardLinks\Tests\Support\FakeUrlGenerator;
 use OCA\DashboardLinks\Tests\Support\InMemoryAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -286,6 +287,53 @@ final class CatalogTest extends TestCase {
 		self::assertArrayNotHasKey('importance', $stored['links'][0]);
 	}
 
+	public function testReplaceLeavesUnknownSchemaUntouched(): void {
+		$config = new InMemoryAppConfig();
+		$stored = [
+			'schema' => 3,
+			'links' => [$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/')],
+		];
+		$config->setValueArray('dashboard_links', 'catalog', $stored, true);
+		$store = new CatalogStore($config);
+		$writes = $config->arrayWrites;
+
+		self::assertSame([], $store->current()->links());
+
+		try {
+			$store->replace(Catalog::empty(), $store->current()->revision());
+			self::fail('CatalogStore::replace wrote over an unknown schema');
+		} catch (UnreadableCatalog) {
+			self::assertSame($writes, $config->arrayWrites);
+			self::assertSame($stored, $config->getValueArray('dashboard_links', 'catalog', [], true));
+		}
+	}
+
+	public function testReplaceLeavesUnparseableSchema2Untouched(): void {
+		$config = new InMemoryAppConfig();
+		$stored = [
+			'schema' => 2,
+			'categories' => [],
+			'links' => ['nope'],
+		];
+		$config->setValueArray('dashboard_links', 'catalog', $stored, true);
+		$store = new CatalogStore($config);
+		$writes = $config->arrayWrites;
+		$next = Catalog::parse([
+			'categories' => [],
+			'links' => [$this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/')],
+		]);
+
+		self::assertSame([], $store->current()->links());
+
+		try {
+			$store->replace($next, $store->current()->revision());
+			self::fail('CatalogStore::replace wrote over an unparseable schema 2 catalog');
+		} catch (UnreadableCatalog) {
+			self::assertSame($writes, $config->arrayWrites);
+			self::assertSame($stored, $config->getValueArray('dashboard_links', 'catalog', [], true));
+		}
+	}
+
 	public function testVisibleDropsDisabled(): void {
 		$catalog = Catalog::parse([
 			'categories' => [],
@@ -387,14 +435,7 @@ final class CatalogTest extends TestCase {
 		self::assertSame('actions/timezone.svg', $icon->corePath());
 		self::assertSame(
 			'https://cloud.example.test/apps/core/img/actions/timezone.svg',
-			(new LinkUrls(new FakeUrlGenerator()))->iconUrl(new CompanyLink(
-				LinkId::parse(self::INTRANET_ID),
-				'Time',
-				HttpsUrl::parse('https://my.clockodo.com/'),
-				$icon,
-				null,
-				true,
-			)),
+			(new LinkUrls(new FakeUrlGenerator()))->chosenIconUrl($icon),
 		);
 	}
 
