@@ -23,39 +23,25 @@ final class CatalogStore {
 	}
 
 	public function current(): Catalog {
-		$doc = $this->config->getValueArray(Application::APP_ID, self::KEY, [], true);
-		if ($doc === []) {
-			return Catalog::empty();
-		}
-		$schema = $doc['schema'] ?? null;
-		if ($schema === self::LEGACY_SCHEMA) {
-			$rows = $doc['links'] ?? [];
-			return Catalog::fromLegacyRows(is_array($rows) ? array_values($rows) : []);
-		}
-		if ($schema !== self::SCHEMA) {
-			return Catalog::empty();
-		}
 		try {
-			return Catalog::parse([
-				'categories' => $doc['categories'] ?? [],
-				'links' => $doc['links'] ?? [],
-			]);
-		} catch (InvalidCatalog) {
+			return $this->interpret()['catalog'];
+		} catch (UnreadableCatalog) {
 			return Catalog::empty();
 		}
 	}
 
 	/**
-	 * IAppConfig has no compare-and-swap. Equal content returns without a write
-	 * so a retry is safe. A lost race still 412s the next distinct save.
+	 * IAppConfig has no compare-and-swap. Equal content on schema 2 returns
+	 * without a write so a retry is safe. A lost race still 412s the next
+	 * distinct save. An unreadable document is not that empty catalog.
 	 *
 	 * @throws StaleCatalog
+	 * @throws UnreadableCatalog
 	 */
 	public function replace(Catalog $next, string $expectedRevision): Catalog {
-		$current = $this->current();
-		$stored = $this->config->getValueArray(Application::APP_ID, self::KEY, [], true);
-		$needsUpgrade = ($stored['schema'] ?? null) !== self::SCHEMA;
-		if ($next->revision() === $current->revision() && !$needsUpgrade) {
+		$read = $this->interpret();
+		$current = $read['catalog'];
+		if ($next->revision() === $current->revision() && !$read['upgrade']) {
 			return $current;
 		}
 		if ($expectedRevision !== $current->revision()) {
@@ -77,5 +63,42 @@ final class CatalogStore {
 		);
 
 		return $next;
+	}
+
+	/**
+	 * Missing key and schema 1 are writable. Unknown schema and a schema 2
+	 * document that fails parse are not an empty catalog.
+	 *
+	 * @return array{catalog: Catalog, upgrade: bool}
+	 * @throws UnreadableCatalog
+	 */
+	private function interpret(): array {
+		$doc = $this->config->getValueArray(Application::APP_ID, self::KEY, [], true);
+		if ($doc === []) {
+			return ['catalog' => Catalog::empty(), 'upgrade' => true];
+		}
+		$schema = $doc['schema'] ?? null;
+		if ($schema === self::LEGACY_SCHEMA) {
+			$rows = $doc['links'] ?? [];
+
+			return [
+				'catalog' => Catalog::fromLegacyRows(is_array($rows) ? array_values($rows) : []),
+				'upgrade' => true,
+			];
+		}
+		if ($schema !== self::SCHEMA) {
+			throw new UnreadableCatalog();
+		}
+		try {
+			return [
+				'catalog' => Catalog::parse([
+					'categories' => $doc['categories'] ?? [],
+					'links' => $doc['links'] ?? [],
+				]),
+				'upgrade' => false,
+			];
+		} catch (InvalidCatalog) {
+			throw new UnreadableCatalog();
+		}
 	}
 }

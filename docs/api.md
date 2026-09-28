@@ -39,6 +39,8 @@ A category is `{id, title}`. A link is `{id, title, href, icon, categoryId, enab
 
 `412` means someone else saved first. The body is the current catalog.
 
+`409` means the stored document could not be read as a catalog. Nothing is written. GET still returns an empty catalog for that document.
+
 `revision` is the first 12 hex characters of SHA-256 over the canonical categories and links. It is not stored as its own config key. A schema 1 catalog is read as the default list. The next save writes schema 2.
 
 Import from the External sites app runs in the browser. The control is shown only when that app is enabled and has at least one site. An iframe site is stored as `/apps/external/{id}/`. A redirect site is stored as its https URL. Nothing is stored until Save. This app does not read or write the External sites configuration on the server.
