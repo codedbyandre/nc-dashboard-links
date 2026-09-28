@@ -94,7 +94,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 	 * Grouped tile for the browser. Clients still use the flat {@see getItems()} list.
 	 *
 	 * @return array{
-	 *     sections: list<array{label: string, links: list<array{title: string, subtitle: string, href: string}>}>,
+	 *     sections: list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string}>}>,
 	 *     emptyTitle: string,
 	 *     moreLabel: string,
 	 *     moreUrl: ?string,
@@ -167,7 +167,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 	/**
 	 * First seven visible links. Named categories keep a heading; links without one do not.
 	 *
-	 * @return list<array{label: string, links: list<array{title: string, subtitle: string, href: string}>}>
+	 * @return list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string}>}>
 	 */
 	private function tileSections(): array {
 		$catalog = $this->store->current();
@@ -177,17 +177,20 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 			if ($remaining < 1) {
 				break;
 			}
-			$views = $this->presenter->views($section['links']->take($remaining));
+			$taken = $section['links']->take($remaining);
+			$views = $this->presenter->views($taken);
 			if ($views === []) {
 				continue;
 			}
 			$remaining -= count($views);
+			$companyLinks = $taken->links();
 			$links = [];
-			foreach ($views as $view) {
+			foreach ($views as $index => $view) {
 				$links[] = [
 					'title' => $view->title,
 					'subtitle' => $view->subtitle,
 					'href' => $view->href,
+					'iconUrl' => $companyLinks[$index]->icon === null ? null : $view->iconUrl,
 				];
 			}
 			$sections[] = [

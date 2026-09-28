@@ -64,7 +64,7 @@ final class StorePolicyTest extends TestCase {
 			$xml = file_get_contents($info);
 			self::assertNotFalse($xml);
 			file_put_contents($info, preg_replace(
-				'#<name>Company Links Dashboard</name>#',
+				'#<name>Company links</name>#',
 				'<name>Nextcloud Company Links</name>',
 				$xml,
 				1,

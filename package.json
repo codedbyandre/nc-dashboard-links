@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Dashboard tile with admin-configured company links",
+  "description": "Admin-managed company links on the Dashboard and an All links page",
   "author": "André Wiesehoff",
   "license": "AGPL-3.0-or-later",
   "scripts": {

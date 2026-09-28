@@ -4,7 +4,7 @@
 version = 1
 SPDX-PackageName = "dashboard_links"
 SPDX-PackageSupplier = "André Wiesehoff"
-SPDX-PackageDownloadLocation = "https://github.com/AWiesehoffe2/nextcloud-company-links"
+SPDX-PackageDownloadLocation = "https://github.com/codedbyandre/nc-dashboard-links"
 
 [[annotations]]
 path = ["composer.json", "composer.lock", "phpunit.xml.dist"]
@@ -13,7 +13,7 @@ SPDX-FileCopyrightText = "2026 André Wiesehoff"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
-path = ["img/app.svg", "img/app-dark.svg", "img/overlay-featured.svg"]
+path = ["img/app.svg", "img/app-dark.svg"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 André Wiesehoff"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
