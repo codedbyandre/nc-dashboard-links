@@ -21,6 +21,7 @@ use OCA\DashboardLinks\Links\InvalidLink;
 use OCA\DashboardLinks\Links\LinkId;
 use OCA\DashboardLinks\Links\LinkUrls;
 use OCA\DashboardLinks\Links\StaleCatalog;
+use OCA\DashboardLinks\Links\UnreadableCatalog;
 use OCA\DashboardLinks\Tests\Support\FakeUrlGenerator;
 use OCA\DashboardLinks\Tests\Support\InMemoryAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -284,6 +285,53 @@ final class CatalogTest extends TestCase {
 		$stored = $config->getValueArray('dashboard_links', 'catalog', [], true);
 		self::assertSame(2, $stored['schema']);
 		self::assertArrayNotHasKey('importance', $stored['links'][0]);
+	}
+
+	public function testReplaceLeavesUnknownSchemaUntouched(): void {
+		$config = new InMemoryAppConfig();
+		$stored = [
+			'schema' => 3,
+			'links' => [$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/')],
+		];
+		$config->setValueArray('dashboard_links', 'catalog', $stored, true);
+		$store = new CatalogStore($config);
+		$writes = $config->arrayWrites;
+
+		self::assertSame([], $store->current()->links());
+
+		try {
+			$store->replace(Catalog::empty(), $store->current()->revision());
+			self::fail('CatalogStore::replace wrote over an unknown schema');
+		} catch (UnreadableCatalog) {
+			self::assertSame($writes, $config->arrayWrites);
+			self::assertSame($stored, $config->getValueArray('dashboard_links', 'catalog', [], true));
+		}
+	}
+
+	public function testReplaceLeavesUnparseableSchema2Untouched(): void {
+		$config = new InMemoryAppConfig();
+		$stored = [
+			'schema' => 2,
+			'categories' => [],
+			'links' => ['nope'],
+		];
+		$config->setValueArray('dashboard_links', 'catalog', $stored, true);
+		$store = new CatalogStore($config);
+		$writes = $config->arrayWrites;
+		$next = Catalog::parse([
+			'categories' => [],
+			'links' => [$this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/')],
+		]);
+
+		self::assertSame([], $store->current()->links());
+
+		try {
+			$store->replace($next, $store->current()->revision());
+			self::fail('CatalogStore::replace wrote over an unparseable schema 2 catalog');
+		} catch (UnreadableCatalog) {
+			self::assertSame($writes, $config->arrayWrites);
+			self::assertSame($stored, $config->getValueArray('dashboard_links', 'catalog', [], true));
+		}
 	}
 
 	public function testVisibleDropsDisabled(): void {

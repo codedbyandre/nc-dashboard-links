@@ -13,6 +13,7 @@ use OCA\DashboardLinks\Links\Catalog;
 use OCA\DashboardLinks\Links\CatalogStore;
 use OCA\DashboardLinks\Links\InvalidCatalog;
 use OCA\DashboardLinks\Links\StaleCatalog;
+use OCA\DashboardLinks\Links\UnreadableCatalog;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\ApiRoute;
 use OCP\AppFramework\Http\Attribute\PasswordConfirmationRequired;
@@ -54,6 +55,8 @@ final class CatalogController extends OCSController {
 			return new DataResponse(['errors' => $e->errors], Http::STATUS_BAD_REQUEST);
 		} catch (StaleCatalog $e) {
 			return new DataResponse($e->current->jsonSerialize(), Http::STATUS_PRECONDITION_FAILED);
+		} catch (UnreadableCatalog) {
+			return new DataResponse([], Http::STATUS_CONFLICT);
 		}
 	}
 }

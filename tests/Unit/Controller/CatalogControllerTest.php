@@ -135,6 +135,30 @@ final class CatalogControllerTest extends TestCase {
 		self::assertSame($catalog->revision(), $response->getData()['revision']);
 	}
 
+	public function testPutUnreadableCatalogIs409AndLeavesStorage(): void {
+		$config = new InMemoryAppConfig();
+		$stored = [
+			'schema' => 3,
+			'links' => [$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/')],
+		];
+		$config->setValueArray('dashboard_links', 'catalog', $stored, true);
+		$store = new CatalogStore($config);
+		$controller = new CatalogController(
+			'dashboard_links',
+			$this->createStub(IRequest::class),
+			$store,
+		);
+
+		$response = $controller->replace(
+			$store->current()->revision(),
+			[],
+			[$this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/')],
+		);
+
+		self::assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		self::assertSame($stored, $config->getValueArray('dashboard_links', 'catalog', [], true));
+	}
+
 	/**
 	 * @param array{revision: string, categories: list<array<string, mixed>>, links: list<array<string, mixed>>} $envelope
 	 * @return list<string>
