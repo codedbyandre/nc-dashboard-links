@@ -171,6 +171,20 @@ final class LinksWidgetTest extends TestCase {
 			$links[1]['iconUrl'],
 		);
 		self::assertNull($links[2]['iconUrl']);
+
+		$items = $this->widget->getItems('alice');
+		self::assertSame(
+			'https://cloud.example.test/apps/core/img/actions/settings.svg',
+			$items[0]->getIconUrl(),
+		);
+		self::assertSame(
+			'https://cloud.example.test/apps/dashboard_links/icons/0123456789abcdef.png',
+			$items[1]->getIconUrl(),
+		);
+		self::assertSame(
+			'https://cloud.example.test/apps/dashboard_links/img/app-dark.svg',
+			$items[2]->getIconUrl(),
+		);
 	}
 
 	public function testTileMoreUrlWhenMoreThanSevenVisible(): void {

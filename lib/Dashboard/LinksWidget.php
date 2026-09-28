@@ -151,12 +151,14 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 			$catalog->categoryTitles(),
 		);
 
+		$defaultIcon = $this->urls->defaultIconUrl();
+
 		return array_map(
 			static fn (LinkView $view): WidgetItem => new WidgetItem(
 				$view->title,
 				$view->subtitle,
 				$view->href,
-				$view->iconUrl,
+				$view->icon->imageUrl($defaultIcon),
 				$view->id,
 				$view->overlayIconUrl,
 			),
@@ -183,14 +185,13 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 				continue;
 			}
 			$remaining -= count($views);
-			$companyLinks = $taken->links();
 			$links = [];
-			foreach ($views as $index => $view) {
+			foreach ($views as $view) {
 				$links[] = [
 					'title' => $view->title,
 					'subtitle' => $view->subtitle,
 					'href' => $view->href,
-					'iconUrl' => $companyLinks[$index]->icon === null ? null : $view->iconUrl,
+					'iconUrl' => $view->icon->tileUrl(),
 				];
 			}
 			$sections[] = [

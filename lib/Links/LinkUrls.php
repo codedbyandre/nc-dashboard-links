@@ -25,17 +25,14 @@ final class LinkUrls {
 		);
 	}
 
-	public function iconUrl(CompanyLink $link): string {
-		if ($link->icon === null) {
-			return $this->defaultIconUrl();
-		}
-		if ($link->icon->isCore()) {
+	public function chosenIconUrl(Icon $icon): string {
+		if ($icon->isCore()) {
 			return $this->urlGenerator->getAbsoluteURL(
-				$this->urlGenerator->imagePath('core', $link->icon->corePath()),
+				$this->urlGenerator->imagePath('core', $icon->corePath()),
 			);
 		}
 
-		return $this->storedIconUrl($link->icon);
+		return $this->storedIconUrl($icon);
 	}
 
 	public function storedIconUrl(Icon $icon): string {
