@@ -435,14 +435,7 @@ final class CatalogTest extends TestCase {
 		self::assertSame('actions/timezone.svg', $icon->corePath());
 		self::assertSame(
 			'https://cloud.example.test/apps/core/img/actions/timezone.svg',
-			(new LinkUrls(new FakeUrlGenerator()))->iconUrl(new CompanyLink(
-				LinkId::parse(self::INTRANET_ID),
-				'Time',
-				HttpsUrl::parse('https://my.clockodo.com/'),
-				$icon,
-				null,
-				true,
-			)),
+			(new LinkUrls(new FakeUrlGenerator()))->chosenIconUrl($icon),
 		);
 	}
 

@@ -22,12 +22,15 @@ final class LinkPresenter {
 	public function views(VisibleLinks $links, array $categoryTitles = []): array {
 		$views = [];
 		foreach ($links->links() as $link) {
+			$icon = $link->icon === null
+				? LinkIcon::none()
+				: LinkIcon::chosen($this->urls->chosenIconUrl($link->icon));
 			$views[] = new LinkView(
 				(string)$link->id,
 				$link->title,
 				$this->subtitle($link, $categoryTitles),
 				$this->urls->openUrl($link),
-				$this->urls->iconUrl($link),
+				$icon,
 				'',
 			);
 		}
