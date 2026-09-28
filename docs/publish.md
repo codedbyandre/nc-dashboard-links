@@ -43,7 +43,7 @@ echo -n "dashboard_links" \
 
 ## Sign a release
 
-With `NEXTCLOUD_ROOT` pointing at a Nextcloud 33–35 checkout that can run `occ`:
+With `NEXTCLOUD_ROOT` pointing at a Nextcloud 33 to 35 checkout that can run `occ`:
 
 ```sh
 export NEXTCLOUD_ROOT=/path/to/nextcloud
@@ -56,11 +56,9 @@ Upload the public `dashboard_links.tar.gz` URL and that signature at [apps.nextc
 
 ## Screenshots
 
-`info.xml` has no screenshot yet. After you run the app on a real instance, host HTTPS images (at most 2 MiB) and add:
+The admin screenshot is `docs/screenshots/admin.png`. `appinfo/info.xml` points at the raw GitHub URL for that file on `main`. The store downloads the URL. The file stays out of the app tarball, because `docs/` is not in the `make appstore` allowlist. The URL answers only after this file is on `main`.
 
-```xml
-<screenshot>https://example.com/admin.png</screenshot>
-```
+A Dashboard tile screenshot is still missing. Host it over HTTPS, at most 2 MiB, and add another `<screenshot>` before signing.
 
 ## Changelog heading
 

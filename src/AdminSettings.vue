@@ -8,7 +8,7 @@
 		:name="t('dashboard_links', 'Company links')"
 		:description="t('dashboard_links', 'Links stay in one list. Add a category only when you want a named group.')">
 		<NcNoteCard type="info">
-			{{ t('dashboard_links', 'Opening a link sends the user\'s browser to that address. The destination can see the IP address, browser details, and often the Nextcloud address as referrer. List those destinations in your instance privacy notice.') }}
+			{{ t('dashboard_links', 'Opening a link sends the user\'s browser to that address. The response sets Referrer-Policy no-referrer. The destination can still see the IP address and usual browser headers. List those destinations in your instance privacy notice.') }}
 		</NcNoteCard>
 		<NcNoteCard v-if="savedNotice" type="success">
 			{{ savedNotice }}

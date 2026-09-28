@@ -9,6 +9,7 @@ interface TileLink {
 	title: string
 	subtitle: string
 	href: string
+	iconUrl: string | null
 }
 
 interface TileSection {
@@ -52,6 +53,24 @@ function span(className: string, text: string): HTMLSpanElement {
 }
 
 /**
+ * Selected or uploaded icon as an image. Arrow when the link has none.
+ *
+ * @param iconUrl Absolute icon URL, or null when unset
+ */
+function tileIcon(iconUrl: string | null | undefined): HTMLElement {
+	if (typeof iconUrl === 'string' && iconUrl !== '') {
+		const img = document.createElement('img')
+		img.className = 'dashboard-links-tile-icon'
+		img.src = iconUrl
+		img.alt = ''
+		return img
+	}
+	const arrow = span('dashboard-links-tile-arrow', '→')
+	arrow.setAttribute('aria-hidden', 'true')
+	return arrow
+}
+
+/**
  * @param tile Grouped links for this user
  */
 function render(tile: TileState): HTMLDivElement {
@@ -81,15 +100,13 @@ function render(tile: TileState): HTMLDivElement {
 			const anchor = document.createElement('a')
 			anchor.className = 'dashboard-links-tile-link'
 			anchor.href = link.href
-			const arrow = span('dashboard-links-tile-arrow', '→')
-			arrow.setAttribute('aria-hidden', 'true')
 			const body = document.createElement('span')
 			body.className = 'dashboard-links-tile-text'
 			body.append(
 				span('dashboard-links-tile-title', link.title),
 				span('dashboard-links-tile-host', link.subtitle),
 			)
-			anchor.append(arrow, body)
+			anchor.append(tileIcon(link.iconUrl), body)
 			item.append(anchor)
 			list.append(item)
 		}

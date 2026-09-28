@@ -9,5 +9,5 @@ declare(strict_types=1);
 ?>
 <div id="dashboard-links-admin"></div>
 <noscript>
-	<p>JavaScript is required to edit company links.</p>
+	<p><?php p($noscript); ?></p>
 </noscript>

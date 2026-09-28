@@ -1,6 +1,6 @@
 {
-  "name": "awiesehoffe2/dashboard_links",
-  "description": "Dashboard tile with admin-configured company links",
+  "name": "codedbyandre/dashboard_links",
+  "description": "Admin-managed company links on the Dashboard and an All links page",
   "license": "AGPL-3.0-or-later",
   "type": "project",
   "require": {

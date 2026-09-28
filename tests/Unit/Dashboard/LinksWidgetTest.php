@@ -129,6 +129,50 @@ final class LinksWidgetTest extends TestCase {
 		self::assertNull($tile['setupUrl']);
 	}
 
+	public function testTileIncludesSelectedAndUploadedIconUrls(): void {
+		$catalog = Catalog::parse([
+			'categories' => [
+				['id' => self::TOOLS_ID, 'title' => 'Tools'],
+			],
+			'links' => [
+				$this->row(
+					self::INTRANET_ID,
+					'CRM-System',
+					'https://crm.e2-intranet.de/',
+					self::TOOLS_ID,
+					'core:actions/settings.svg',
+				),
+				$this->row(
+					self::WIKI_ID,
+					'Unternehmens Wiki',
+					'https://wiki.intranet.de/',
+					self::TOOLS_ID,
+					'0123456789abcdef.png',
+				),
+				$this->row(
+					self::HANDBOOK_ID,
+					'Telefonbuch',
+					'https://cally.intranet.de/',
+					self::TOOLS_ID,
+				),
+			],
+		]);
+		$this->store->replace($catalog, $this->store->current()->revision());
+
+		$tile = $this->widget->tileState('alice');
+		$links = $tile['sections'][0]['links'];
+
+		self::assertSame(
+			'https://cloud.example.test/apps/core/img/actions/settings.svg',
+			$links[0]['iconUrl'],
+		);
+		self::assertSame(
+			'https://cloud.example.test/apps/dashboard_links/icons/0123456789abcdef.png',
+			$links[1]['iconUrl'],
+		);
+		self::assertNull($links[2]['iconUrl']);
+	}
+
 	public function testTileMoreUrlWhenMoreThanSevenVisible(): void {
 		$this->replaceEightVisible();
 
@@ -180,14 +224,20 @@ final class LinksWidgetTest extends TestCase {
 	}
 
 	/**
-	 * @return array{id: string, title: string, href: string, icon: null, categoryId: ?string, enabled: bool}
+	 * @return array{id: string, title: string, href: string, icon: ?string, categoryId: ?string, enabled: bool}
 	 */
-	private function row(string $id, string $title, string $href, ?string $categoryId = null): array {
+	private function row(
+		string $id,
+		string $title,
+		string $href,
+		?string $categoryId = null,
+		?string $icon = null,
+	): array {
 		return [
 			'id' => $id,
 			'title' => $title,
 			'href' => $href,
-			'icon' => null,
+			'icon' => $icon,
 			'categoryId' => $categoryId,
 			'enabled' => true,
 		];

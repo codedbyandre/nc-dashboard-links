@@ -44,7 +44,9 @@ final class Admin implements ISettings {
 
 		Util::addScript(Application::APP_ID, 'dashboard_links-admin');
 
-		return new TemplateResponse(Application::APP_ID, 'settings', [], TemplateResponse::RENDER_AS_BLANK);
+		return new TemplateResponse(Application::APP_ID, 'settings', [
+			'noscript' => $this->l10n->t('JavaScript is required to edit company links.'),
+		], TemplateResponse::RENDER_AS_BLANK);
 	}
 
 	#[\Override]
