@@ -10,6 +10,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.0 - 2026-09-30
+
+### Changed
+
+- Admin editor groups links under their category. Links without a category stay in Default.
+- Compact icon picker (`NcSelect`) replaces the row of core-icon buttons.
+
+### Added
+
+- Fetch favicon from a link URL (`POST /apps/dashboard_links/icons/favicon`).
+
 ## 1.0.0 - 2026-09-23
 
 First version of Company links (`dashboard_links`).

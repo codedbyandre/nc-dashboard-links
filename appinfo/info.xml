@@ -15,7 +15,7 @@
 	<description lang="de"><![CDATA[Admins pflegen einen Katalog von Firmenlinks, optional mit Kategorien und Icons. Nutzer öffnen diese Links auf der Dashboard-Kachel und unter Alle Links. Nach dem Aktivieren fügen Nutzer die Kachel unter Anpassen hinzu. Erlaubt sind nur https-Ziele.
 
 **Datenschutz.** Diese App speichert keine Benutzerkonten und sendet keine Daten an den Autor. Ein Klick schickt den Browser an die vom Admin gewählte https-Adresse. Die Antwort setzt Referrer-Policy no-referrer. Das Ziel kann weiterhin die IP-Adresse und die üblichen Browser-Header sehen. Admins müssen diese Ziele in der Datenschutzerklärung der Instanz nennen. Deinstallation löscht Katalog und hochgeladene Icons.]]></description>
-	<version>1.0.0</version>
+	<version>1.1.0</version>
 	<licence>AGPL-3.0-or-later</licence>
 	<author homepage="https://github.com/codedbyandre">André Wiesehoff</author>
 	<namespace>DashboardLinks</namespace>
