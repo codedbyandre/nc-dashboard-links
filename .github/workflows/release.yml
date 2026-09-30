@@ -1,0 +1,119 @@
+# SPDX-FileCopyrightText: 2026 André Wiesehoff
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Refuse prereleases
+        if: github.event.release.prerelease
+        run: |
+          echo "Prereleases stay on GitHub. Publish a full release for the app store." >&2
+          exit 1
+
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - name: Require matching version
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          info = ET.parse("appinfo/info.xml").getroot().findtext("version", default="").strip()
+          package = json.load(open("package.json"))["version"]
+          if tag != f"v{info}":
+              sys.exit(f"Tag {tag} must be v{info} to match appinfo/info.xml.")
+          if package != info:
+              sys.exit(f"package.json version {package} must match appinfo/info.xml {info}.")
+          PY
+
+      - name: Require release secrets
+        env:
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          APPSTORE_TOKEN: ${{ secrets.APPSTORE_TOKEN }}
+        run: |
+          if [ -z "$APP_PRIVATE_KEY" ]; then
+            echo "Missing Actions secret APP_PRIVATE_KEY." >&2
+            exit 1
+          fi
+          if [ -z "$APPSTORE_TOKEN" ]; then
+            echo "Missing Actions secret APPSTORE_TOKEN." >&2
+            exit 1
+          fi
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+          extensions: bcmath, ctype, curl, dom, fileinfo, gd, gmp, intl, mbstring, openssl, pcntl, posix, xml, zip
+          ini-values: memory_limit=512M
+
+      - name: Download Nextcloud for signing
+        run: |
+          mkdir -p "$RUNNER_TEMP/signer"
+          curl -fsSL -o "$RUNNER_TEMP/signer/nextcloud.tar.bz2" \
+            https://download.nextcloud.com/server/releases/latest-33.tar.bz2
+          tar -xjf "$RUNNER_TEMP/signer/nextcloud.tar.bz2" -C "$RUNNER_TEMP/signer"
+          test -f "$RUNNER_TEMP/signer/nextcloud/occ"
+
+      - name: Sign and package
+        env:
+          NEXTCLOUD_ROOT: ${{ runner.temp }}/signer/nextcloud
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: |
+          umask 077
+          mkdir -p "$HOME/.nextcloud/certificates"
+          printf '%s\n' "$APP_PRIVATE_KEY" > "$HOME/.nextcloud/certificates/dashboard_links.key"
+          curl -fsSL -o "$HOME/.nextcloud/certificates/dashboard_links.crt" \
+            https://raw.githubusercontent.com/nextcloud/app-certificate-requests/master/dashboard_links/dashboard_links.crt
+          make appstore SIGN=required
+          tar -tzf build/appstore/dashboard_links.tar.gz | grep -qx "dashboard_links/appinfo/signature.json"
+          php "$NEXTCLOUD_ROOT/occ" integrity:check-app dashboard_links \
+            --path="$GITHUB_WORKSPACE/build/appstore/dashboard_links"
+
+      - name: Attach tarball to the GitHub release
+        id: attach
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/appstore/dashboard_links.tar.gz
+          asset_name: dashboard_links-${{ github.event.release.tag_name }}.tar.gz
+          tag: ${{ github.ref }}
+          overwrite: true
+
+      - name: Publish to the Nextcloud app store
+        uses: nextcloud-libraries/nextcloud-appstore-push-action@a011fe619bcf6e77ddebc96f9908e1af4071b9c1 # v1.0.3
+        with:
+          app_name: dashboard_links
+          appstore_token: ${{ secrets.APPSTORE_TOKEN }}
+          download_url: ${{ steps.attach.outputs.browser_download_url }}
+          app_private_key: ${{ secrets.APP_PRIVATE_KEY }}

@@ -22,8 +22,15 @@ appstore:
 			--privateKey="$(cert_dir)/$(app_id).key" \
 			--certificate="$(cert_dir)/$(app_id).crt" \
 			--path="$(app_dir)"; \
+	elif [ "$(SIGN)" = "required" ]; then \
+		echo "Refusing to package: SIGN=required and occ, the key, or the certificate is missing." >&2; \
+		exit 1; \
 	else \
 		echo "Skipping occ integrity:sign-app. Set NEXTCLOUD_ROOT and place $(app_id).key and $(app_id).crt in $(cert_dir)."; \
+	fi
+	@if [ "$(SIGN)" = "required" ] && [ ! -f "$(app_dir)/appinfo/signature.json" ]; then \
+		echo "Refusing to package: appinfo/signature.json was not written." >&2; \
+		exit 1; \
 	fi
 	tar -czf "$(sign_dir)/$(app_id).tar.gz" -C "$(sign_dir)" "$(app_id)"
 	php "$(CURDIR)/tests/Release/check-staged.php" archive "$(sign_dir)/$(app_id).tar.gz"
