@@ -7,6 +7,8 @@
 
 Admin-managed company links for the Nextcloud Dashboard and an All links page.
 
+![Company links on the Dashboard](docs/screenshots/dashboard.png)
+
 ![Company links in the administration settings](docs/screenshots/admin.png)
 
 Nextcloud 33 to 35. PHP 8.2 to 8.5. The interface is in English and German.
@@ -44,6 +46,8 @@ Remove the app with `occ app:remove dashboard_links`. That deletes the catalog a
 ## Privacy
 
 The app stores no accounts and sends no catalog data to the author. Opening a link sends the browser to the https address an administrator saved. The response sets `Referrer-Policy: no-referrer`. The destination can still see the IP address and usual browser headers. List those destinations in the instance privacy notice.
+
+Fetch favicon runs only when an administrator presses the button. The server requests that site. If the site returns no image, the server requests a favicon for the hostname from Google.
 
 ## Develop
 

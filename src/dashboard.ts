@@ -10,6 +10,7 @@ interface TileLink {
 	subtitle: string
 	href: string
 	iconUrl: string | null
+	iconMonochrome: boolean
 }
 
 interface TileSection {
@@ -56,11 +57,14 @@ function span(className: string, text: string): HTMLSpanElement {
  * Selected or uploaded icon as an image. Arrow when the link has none.
  *
  * @param iconUrl Absolute icon URL, or null when unset
+ * @param monochrome Black Nextcloud artwork, inverted in dark mode
  */
-function tileIcon(iconUrl: string | null | undefined): HTMLElement {
+function tileIcon(iconUrl: string | null | undefined, monochrome: boolean): HTMLElement {
 	if (typeof iconUrl === 'string' && iconUrl !== '') {
 		const img = document.createElement('img')
-		img.className = 'dashboard-links-tile-icon'
+		img.className = monochrome
+			? 'dashboard-links-tile-icon dashboard-links-tile-icon--mono'
+			: 'dashboard-links-tile-icon'
 		img.src = iconUrl
 		img.alt = ''
 		return img
@@ -77,11 +81,14 @@ function render(tile: TileState): HTMLDivElement {
 	const root = document.createElement('div')
 	root.className = 'dashboard-links-tile'
 
+	const scroll = document.createElement('div')
+	scroll.className = 'dashboard-links-tile-scroll'
+
 	if (tile.sections.length === 0) {
 		const empty = document.createElement('p')
 		empty.className = 'dashboard-links-tile-empty'
 		empty.textContent = tile.emptyTitle
-		root.append(empty)
+		scroll.append(empty)
 	}
 
 	for (const section of tile.sections) {
@@ -106,21 +113,15 @@ function render(tile: TileState): HTMLDivElement {
 				span('dashboard-links-tile-title', link.title),
 				span('dashboard-links-tile-host', link.subtitle),
 			)
-			anchor.append(tileIcon(link.iconUrl), body)
+			anchor.append(tileIcon(link.iconUrl, link.iconMonochrome === true), body)
 			item.append(anchor)
 			list.append(item)
 		}
 		block.append(list)
-		root.append(block)
+		scroll.append(block)
 	}
+	root.append(scroll)
 
-	if (tile.moreUrl !== null && tile.moreUrl !== '') {
-		const more = document.createElement('a')
-		more.className = 'dashboard-links-tile-more'
-		more.href = tile.moreUrl
-		more.textContent = tile.moreLabel
-		root.append(more)
-	}
 	if (tile.setupUrl !== null && tile.setupUrl !== '') {
 		const setup = document.createElement('a')
 		setup.className = 'button'

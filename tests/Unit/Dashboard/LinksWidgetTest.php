@@ -171,6 +171,9 @@ final class LinksWidgetTest extends TestCase {
 			$links[1]['iconUrl'],
 		);
 		self::assertNull($links[2]['iconUrl']);
+		self::assertTrue($links[0]['iconMonochrome']);
+		self::assertFalse($links[1]['iconMonochrome']);
+		self::assertFalse($links[2]['iconMonochrome']);
 
 		$items = $this->widget->getItems('alice');
 		self::assertSame(
@@ -187,7 +190,7 @@ final class LinksWidgetTest extends TestCase {
 		);
 	}
 
-	public function testTileMoreUrlWhenMoreThanSevenVisible(): void {
+	public function testTileIncludesEveryVisibleLink(): void {
 		$this->replaceEightVisible();
 
 		$tile = $this->widget->tileState('alice');
@@ -196,8 +199,9 @@ final class LinksWidgetTest extends TestCase {
 			$count += count($section['links']);
 		}
 
-		self::assertSame(7, $count);
-		self::assertSame('https://cloud.example.test/apps/dashboard_links/', $tile['moreUrl']);
+		self::assertSame(8, $count);
+		self::assertSame('Status', $tile['sections'][0]['links'][7]['title']);
+		self::assertNull($tile['moreUrl']);
 		self::assertNull($tile['setupUrl']);
 	}
 

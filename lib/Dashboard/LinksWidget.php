@@ -82,6 +82,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 		);
 		Util::addScript(Application::APP_ID, Application::APP_ID . '-dashboard');
 		Util::addStyle(Application::APP_ID, 'dashboard');
+		Util::addStyle(Application::APP_ID, 'icon-contrast');
 	}
 
 	/** @return list<WidgetItem> */
@@ -94,7 +95,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 	 * Grouped tile for the browser. Clients still use the flat {@see getItems()} list.
 	 *
 	 * @return array{
-	 *     sections: list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string}>}>,
+	 *     sections: list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string, iconMonochrome: bool}>}>,
 	 *     emptyTitle: string,
 	 *     moreLabel: string,
 	 *     moreUrl: ?string,
@@ -109,7 +110,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 			'sections' => $this->tileSections(),
 			'emptyTitle' => $this->l10n->t('No company links configured yet'),
 			'moreLabel' => $this->l10n->t('All links'),
-			'moreUrl' => $visibleCount > self::WEB_TILE_LIMIT ? $this->urls->allLinksUrl() : null,
+			'moreUrl' => null,
 			'setupLabel' => $this->l10n->t('Configure'),
 			'setupUrl' => $visibleCount === 0 && $this->groupManager->isAdmin($userId)
 				? $this->urls->settingsUrl()
@@ -167,24 +168,19 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 	}
 
 	/**
-	 * First seven visible links. Named categories keep a heading; links without one do not.
+	 * Every visible link. Named categories keep a heading; links without one do not.
+	 * The browser tile scrolls inside the normal dashboard card.
 	 *
-	 * @return list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string}>}>
+	 * @return list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string, iconMonochrome: bool}>}>
 	 */
 	private function tileSections(): array {
 		$catalog = $this->store->current();
-		$remaining = self::WEB_TILE_LIMIT;
 		$sections = [];
 		foreach ($catalog->sections() as $section) {
-			if ($remaining < 1) {
-				break;
-			}
-			$taken = $section['links']->take($remaining);
-			$views = $this->presenter->views($taken);
+			$views = $this->presenter->views($section['links']);
 			if ($views === []) {
 				continue;
 			}
-			$remaining -= count($views);
 			$links = [];
 			foreach ($views as $view) {
 				$links[] = [
@@ -192,6 +188,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 					'subtitle' => $view->subtitle,
 					'href' => $view->href,
 					'iconUrl' => $view->icon->tileUrl(),
+					'iconMonochrome' => $view->icon->tileUrl() !== null && $view->icon->monochrome(),
 				];
 			}
 			$sections[] = [

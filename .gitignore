@@ -11,3 +11,7 @@ js/*.map
 .vscode/
 .DS_Store
 .audit/
+
+# Local checkout of https://github.com/nextcloud/nextcloud-skills (not part of this app)
+/.nextcloud-skills/
+/.cursor/skills

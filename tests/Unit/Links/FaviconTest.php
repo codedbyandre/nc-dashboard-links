@@ -40,6 +40,30 @@ final class FaviconTest extends TestCase {
 		self::assertNull(Favicon::firstSameHostIconHref($html, 'https://example.com/'));
 	}
 
+	public function testIconHrefsKeepsCdnIconAfterSameHost(): void {
+		$html = '<link rel="icon" href="/local.png"><link rel="icon" href="https://cdn.example.net/icon.png">';
+		self::assertSame(
+			['https://example.com/local.png', 'https://cdn.example.net/icon.png'],
+			Favicon::iconHrefs($html, 'https://example.com/'),
+		);
+	}
+
+	public function testPublicFaviconUrlUsesOnlyTheHost(): void {
+		self::assertSame(
+			'https://www.google.com/s2/favicons?domain=chatgpt.com&sz=64',
+			Favicon::publicFaviconUrl('chatgpt.com'),
+		);
+	}
+
+	public function testPngFromIcoReturnsEmbeddedPng(): void {
+		$png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+		self::assertIsString($png);
+		$ico = "\x00\x00\x01\x00" . "\x01\x00";
+		$ico .= chr(1) . chr(1) . "\x00\x00" . pack('v', 1) . pack('v', 32) . pack('V', strlen($png)) . pack('V', 22);
+		$ico .= $png;
+		self::assertSame($png, Favicon::pngFromIco($ico));
+	}
+
 	public function testFirstSameHostIconHrefNoIconTag(): void {
 		$html = '<html><head><link rel="stylesheet" href="/app.css"></head></html>';
 		self::assertNull(Favicon::firstSameHostIconHref($html, 'https://example.com/'));

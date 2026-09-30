@@ -12,19 +12,23 @@ namespace OCA\DashboardLinks\Links;
 final readonly class LinkIcon {
 	private function __construct(
 		private ?string $chosenAbsoluteUrl,
+		private bool $monochrome,
 	) {
 	}
 
 	public static function none(): self {
-		return new self(null);
+		return new self(null, true);
 	}
 
-	public static function chosen(string $absoluteUrl): self {
+	/**
+	 * @param bool $monochrome Nextcloud core icons are black artwork. Uploaded images are not.
+	 */
+	public static function chosen(string $absoluteUrl, bool $monochrome): self {
 		if ($absoluteUrl === '') {
 			throw new \InvalidArgumentException('chosen icon URL must not be empty');
 		}
 
-		return new self($absoluteUrl);
+		return new self($absoluteUrl, $monochrome);
 	}
 
 	public function tileUrl(): ?string {
@@ -33,5 +37,13 @@ final readonly class LinkIcon {
 
 	public function imageUrl(string $defaultAppIconUrl): string {
 		return $this->chosenAbsoluteUrl ?? $defaultAppIconUrl;
+	}
+
+	/**
+	 * Black artwork, including the app icon used when a link has none.
+	 * Dark mode inverts it. A stored upload keeps its own colors.
+	 */
+	public function monochrome(): bool {
+		return $this->monochrome;
 	}
 }

@@ -52,7 +52,6 @@ final class PageControllerTest extends TestCase {
 			$this->createStub(IRequest::class),
 			$store,
 			new LinkPresenter($urls),
-			$urls,
 			new IdentityL10N(),
 		);
 	}
@@ -66,10 +65,8 @@ final class PageControllerTest extends TestCase {
 		self::assertSame('', $bands[0]['label']);
 		self::assertSame('Intranet', $bands[0]['links'][0]['title']);
 		self::assertSame('intranet.example.com', $bands[0]['links'][0]['subtitle']);
-		self::assertSame(
-			'https://cloud.example.test/apps/dashboard_links/img/app-dark.svg',
-			$bands[0]['links'][0]['iconUrl'],
-		);
+		self::assertNull($bands[0]['links'][0]['iconUrl']);
+		self::assertFalse($bands[0]['links'][0]['iconMonochrome']);
 		self::assertStringNotContainsString('Company', $bands[0]['links'][0]['subtitle']);
 	}
 
@@ -93,7 +90,6 @@ final class PageControllerTest extends TestCase {
 			$this->createStub(IRequest::class),
 			$store,
 			new LinkPresenter($urls),
-			$urls,
 			new IdentityL10N(),
 		);
 

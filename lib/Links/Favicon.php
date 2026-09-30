@@ -35,25 +35,79 @@ final class Favicon {
 
 		$client = $this->clientService->newClient();
 		$origin = $this->origin($page);
-		$fromIco = $this->tryDownloadImage($client, $origin . '/favicon.ico');
-		if ($fromIco !== null) {
-			return $fromIco;
-		}
-
+		$candidates = [];
 		$html = $this->downloadCapped($client, (string)$page);
-		if ($html === null) {
-			throw new InvalidLink('icon', self::FAIL);
+		if ($html !== null) {
+			$candidates = self::iconHrefs($html, (string)$page);
 		}
-		$iconHref = self::firstSameHostIconHref($html, (string)$page);
-		if ($iconHref === null) {
-			throw new InvalidLink('icon', self::FAIL);
-		}
-		$fromLink = $this->tryDownloadImage($client, $iconHref);
-		if ($fromLink === null) {
-			throw new InvalidLink('icon', self::FAIL);
+		array_push(
+			$candidates,
+			$origin . '/favicon.ico',
+			$origin . '/favicon.png',
+			$origin . '/apple-touch-icon.png',
+		);
+		foreach ($candidates as $candidate) {
+			$icon = $this->tryDownloadImage($client, $candidate);
+			if ($icon !== null) {
+				return $icon;
+			}
 		}
 
-		return $fromLink;
+		$fallback = self::publicFaviconUrl($page->host());
+		$this->assertHostAllowed((string)parse_url($fallback, PHP_URL_HOST));
+		$fromService = $this->tryDownloadImage($client, $fallback);
+		if ($fromService !== null) {
+			return $fromService;
+		}
+
+		throw new InvalidLink('icon', self::FAIL);
+	}
+
+	/**
+	 * Sites such as ChatGPT answer a server fetch with 403. This returns a PNG for the host.
+	 */
+	public static function publicFaviconUrl(string $host): string {
+		return 'https://www.google.com/s2/favicons?domain=' . rawurlencode($host) . '&sz=64';
+	}
+
+	/**
+	 * Icon URLs from link tags. Same-host addresses come first, then other https hosts.
+	 *
+	 * @return list<string>
+	 */
+	public static function iconHrefs(string $html, string $pageHref): array {
+		$pageParts = parse_url($pageHref);
+		if (!is_array($pageParts) || ($pageParts['scheme'] ?? null) !== 'https' || !isset($pageParts['host']) || $pageParts['host'] === '') {
+			return [];
+		}
+		$pageHost = strtolower((string)$pageParts['host']);
+		if (preg_match_all('/<link\b[^>]*>/i', $html, $matches) !== 1 && ($matches[0] ?? []) === []) {
+			return [];
+		}
+		$sameHost = [];
+		$otherHost = [];
+		foreach ($matches[0] as $tag) {
+			$rel = self::attributeValue($tag, 'rel');
+			if ($rel === null || !self::isIconRel($rel)) {
+				continue;
+			}
+			$rawHref = self::attributeValue($tag, 'href');
+			if ($rawHref === null) {
+				continue;
+			}
+			$resolved = self::resolveHttpsHref(html_entity_decode($rawHref, ENT_QUOTES | ENT_HTML5), $pageParts);
+			if ($resolved === null) {
+				continue;
+			}
+			$host = strtolower((string)parse_url($resolved, PHP_URL_HOST));
+			if ($host === $pageHost) {
+				$sameHost[] = $resolved;
+			} else {
+				$otherHost[] = $resolved;
+			}
+		}
+
+		return array_values(array_unique([...$sameHost, ...$otherHost]));
 	}
 
 	/**
@@ -107,6 +161,8 @@ final class Favicon {
 			$absolute = 'https:' . $raw;
 		} elseif (preg_match('#^https://#i', $raw) === 1) {
 			$absolute = $raw;
+		} elseif (preg_match('#^http://#i', $raw) === 1) {
+			return null;
 		} elseif (str_starts_with($raw, '/')) {
 			$absolute = 'https://' . $authority . $raw;
 		} else {
@@ -136,9 +192,61 @@ final class Favicon {
 		return $absolute;
 	}
 
+	/**
+	 * @param array<string, mixed> $pageParts
+	 */
+	private static function resolveHttpsHref(string $raw, array $pageParts): ?string {
+		$raw = trim($raw);
+		if ($raw === '') {
+			return null;
+		}
+		$host = (string)$pageParts['host'];
+		$port = isset($pageParts['port']) ? ':' . $pageParts['port'] : '';
+		$authority = $host . $port;
+
+		if (str_starts_with($raw, '//')) {
+			$absolute = 'https:' . $raw;
+		} elseif (preg_match('#^https://#i', $raw) === 1) {
+			$absolute = $raw;
+		} elseif (preg_match('#^http://#i', $raw) === 1) {
+			return null;
+		} elseif (str_starts_with($raw, '/')) {
+			$absolute = 'https://' . $authority . $raw;
+		} else {
+			$path = $pageParts['path'] ?? '/';
+			if (!is_string($path) || $path === '') {
+				$path = '/';
+			}
+			$baseDir = preg_replace('#/[^/]*$#', '/', $path);
+			if (!is_string($baseDir) || $baseDir === '') {
+				$baseDir = '/';
+			}
+			$absolute = 'https://' . $authority . $baseDir . $raw;
+		}
+
+		$parts = parse_url($absolute);
+		if (!is_array($parts) || ($parts['scheme'] ?? null) !== 'https') {
+			return null;
+		}
+		if (!isset($parts['host']) || !is_string($parts['host']) || $parts['host'] === '') {
+			return null;
+		}
+		if (isset($parts['user']) || isset($parts['pass'])) {
+			return null;
+		}
+
+		return $absolute;
+	}
+
 	private static function isIconRel(string $rel): bool {
 		$tokens = preg_split('/\s+/', strtolower(trim($rel))) ?: [];
-		return in_array('icon', $tokens, true);
+		foreach ($tokens as $token) {
+			if (str_contains($token, 'icon')) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private static function attributeValue(string $tag, string $name): ?string {
@@ -155,27 +263,138 @@ final class Favicon {
 		if ($bytes === null || $bytes === '') {
 			return null;
 		}
-		try {
-			return $this->icons->store($bytes);
-		} catch (InvalidLink) {
-			return null;
+		$png = self::pngFromIco($bytes);
+		foreach ([$bytes, $png] as $candidate) {
+			if (!is_string($candidate) || $candidate === '') {
+				continue;
+			}
+			try {
+				return $this->icons->store($candidate);
+			} catch (InvalidLink) {
+			}
 		}
+
+		return null;
 	}
 
-	private function downloadCapped(IClient $client, string $uri): ?string {
+	/**
+	 * Classic 32-bit ICO images become PNG. Embedded PNG payloads are returned as they are.
+	 */
+	public static function pngFromIco(string $bytes): ?string {
+		if (strlen($bytes) < 6 || substr($bytes, 0, 4) !== "\x00\x00\x01\x00") {
+			return null;
+		}
+		$count = unpack('v', substr($bytes, 4, 2))[1];
+		$best = null;
+		for ($i = 0; $i < $count; $i++) {
+			$entry = substr($bytes, 6 + ($i * 16), 16);
+			if (strlen($entry) < 16) {
+				return $best;
+			}
+			$width = ord($entry[0]) ?: 256;
+			$height = ord($entry[1]) ?: 256;
+			$size = unpack('V', substr($entry, 8, 4))[1];
+			$offset = unpack('V', substr($entry, 12, 4))[1];
+			$image = substr($bytes, $offset, $size);
+			if (str_starts_with($image, "\x89PNG\r\n\x1a\n")) {
+				return $image;
+			}
+			$png = self::dib32ToPng($image, $width, $height);
+			if ($png !== null) {
+				$best = $png;
+			}
+		}
+
+		return $best;
+	}
+
+	private static function dib32ToPng(string $dib, int $width, int $height): ?string {
+		if (!function_exists('imagecreatetruecolor') || strlen($dib) < 40 || $width < 1 || $height < 1) {
+			return null;
+		}
+		$headerSize = unpack('V', substr($dib, 0, 4))[1];
+		if ($headerSize < 40 || strlen($dib) < $headerSize + ($width * $height * 4)) {
+			return null;
+		}
+		$pixels = substr($dib, $headerSize);
+		$rowBytes = $width * 4;
+		$image = imagecreatetruecolor($width, $height);
+		if ($image === false) {
+			return null;
+		}
+		imagealphablending($image, false);
+		imagesavealpha($image, true);
+		for ($y = 0; $y < $height; $y++) {
+			$row = substr($pixels, ($height - 1 - $y) * $rowBytes, $rowBytes);
+			for ($x = 0; $x < $width; $x++) {
+				$offset = $x * 4;
+				if (!isset($row[$offset + 3])) {
+					continue;
+				}
+				$alpha = 127 - intdiv(ord($row[$offset + 3]) * 127, 255);
+				$color = imagecolorallocatealpha($image, ord($row[$offset + 2]), ord($row[$offset + 1]), ord($row[$offset]), $alpha);
+				imagesetpixel($image, $x, $y, $color);
+			}
+		}
+		ob_start();
+		imagepng($image);
+		$png = ob_get_clean();
+		imagedestroy($image);
+
+		return is_string($png) && str_starts_with($png, "\x89PNG") ? $png : null;
+	}
+
+	private function downloadCapped(IClient $client, string $uri, int $redirects = 0): ?string {
 		try {
 			$response = $client->get($uri, [
 				'allow_redirects' => false,
 				'timeout' => 5,
+				'headers' => [
+					'User-Agent' => 'Mozilla/5.0 (compatible; NextcloudCompanyLinks/1.1)',
+				],
 			]);
 		} catch (\Throwable) {
 			return null;
 		}
-		if ($response->getStatusCode() !== 200) {
+		$status = $response->getStatusCode();
+		if ($status >= 300 && $status < 400 && $redirects < 3) {
+			$next = self::resolveRedirect($uri, $response->getHeader('Location'));
+			if ($next === null) {
+				return null;
+			}
+			$host = parse_url($next, PHP_URL_HOST);
+			if (!is_string($host) || $host === '') {
+				return null;
+			}
+			try {
+				$this->assertHostAllowed($host);
+			} catch (InvalidLink) {
+				return null;
+			}
+
+			return $this->downloadCapped($client, $next, $redirects + 1);
+		}
+		if ($status !== 200) {
 			return null;
 		}
 
 		return $this->readCappedBody($response);
+	}
+
+	private static function resolveRedirect(string $from, string $location): ?string {
+		$location = trim($location);
+		if ($location === '') {
+			return null;
+		}
+		if (preg_match('#^https://#i', $location) === 1) {
+			return $location;
+		}
+		$parts = parse_url($from);
+		if (!is_array($parts) || !isset($parts['host']) || !is_string($parts['host'])) {
+			return null;
+		}
+
+		return self::resolveHttpsHref($location, $parts);
 	}
 
 	private function readCappedBody(IResponse $response): ?string {
@@ -210,15 +429,12 @@ final class Favicon {
 			$this->assertPublicIp($candidate);
 			return;
 		}
-		$records = dns_get_record($candidate, DNS_A + DNS_AAAA);
-		if ($records === false || $records === []) {
+		$ips = gethostbynamel($candidate);
+		if ($ips === false || $ips === []) {
 			throw new InvalidLink('icon', self::FAIL);
 		}
-		foreach ($records as $record) {
-			$ip = $record['ip'] ?? $record['ipv6'] ?? null;
-			if (is_string($ip)) {
-				$this->assertPublicIp($ip);
-			}
+		foreach ($ips as $ip) {
+			$this->assertPublicIp($ip);
 		}
 	}
 

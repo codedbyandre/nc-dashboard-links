@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Fetch favicon from a link URL (`POST /apps/dashboard_links/icons/favicon`).
+- Fetch favicon from a link URL (`POST /apps/dashboard_links/icons/favicon`). If the site returns no image, the server requests a favicon for the hostname from Google.
+- Store listing uses the Dashboard and admin screenshots, and states the favicon privacy behavior.
 
 ## 1.0.0 - 2026-09-23
 
