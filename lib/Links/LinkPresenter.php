@@ -24,7 +24,7 @@ final class LinkPresenter {
 		foreach ($links->links() as $link) {
 			$icon = $link->icon === null
 				? LinkIcon::none()
-				: LinkIcon::chosen($this->urls->chosenIconUrl($link->icon));
+				: LinkIcon::chosen($this->urls->chosenIconUrl($link->icon), $link->icon->isCore());
 			$views[] = new LinkView(
 				(string)$link->id,
 				$link->title,

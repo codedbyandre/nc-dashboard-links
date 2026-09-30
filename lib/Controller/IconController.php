@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\DashboardLinks\Controller;
 
+use OCA\DashboardLinks\Links\Favicon;
 use OCA\DashboardLinks\Links\Icon;
 use OCA\DashboardLinks\Links\Icons;
 use OCA\DashboardLinks\Links\InvalidLink;
@@ -32,6 +33,7 @@ final class IconController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly Icons $icons,
+		private readonly Favicon $favicon,
 		private readonly LinkUrls $urls,
 	) {
 		parent::__construct($appName, $request);
@@ -42,6 +44,30 @@ final class IconController extends Controller {
 	public function upload(): DataResponse {
 		try {
 			$icon = $this->icons->store($this->uploadedBytes());
+			return new DataResponse([
+				'icon' => (string)$icon,
+				'url' => $this->urls->storedIconUrl($icon),
+			]);
+		} catch (InvalidLink $e) {
+			return new DataResponse(
+				['field' => $e->field, 'message' => $e->getMessage()],
+				Http::STATUS_BAD_REQUEST,
+			);
+		}
+	}
+
+	#[FrontpageRoute(verb: 'POST', url: '/icons/favicon')]
+	#[PasswordConfirmationRequired]
+	public function favicon(): DataResponse {
+		$href = $this->request->getParam('href');
+		if (!is_string($href)) {
+			return new DataResponse(
+				['field' => 'icon', 'message' => 'The favicon could not be fetched.'],
+				Http::STATUS_BAD_REQUEST,
+			);
+		}
+		try {
+			$icon = $this->favicon->fetch($href);
 			return new DataResponse([
 				'icon' => (string)$icon,
 				'url' => $this->urls->storedIconUrl($icon),

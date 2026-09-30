@@ -9,13 +9,27 @@
 	<name lang="de">Firmenlinks</name>
 	<summary>Admin-managed company links on the Dashboard and an All links page</summary>
 	<summary lang="de">Vom Admin gepflegte Firmenlinks auf dem Dashboard und unter Alle Links</summary>
-	<description><![CDATA[Administrators maintain one catalog of company links, with optional categories and icons. Users open those links from the Dashboard tile and from the All links page. Add the tile under Customize after enabling the app. Only https destinations are allowed.
+	<description><![CDATA[One catalog of company links for the Dashboard and the All links page.
 
-**Privacy.** This app does not store user accounts and does not send data to the author. Opening a link sends the user's browser to the administrator-chosen https address. Responses use Referrer-Policy no-referrer. The destination can still see the user's IP address and usual browser headers. Administrators must list those destinations in the instance privacy notice. Uninstall deletes the catalog and uploaded icons.]]></description>
-	<description lang="de"><![CDATA[Admins pflegen einen Katalog von Firmenlinks, optional mit Kategorien und Icons. Nutzer öffnen diese Links auf der Dashboard-Kachel und unter Alle Links. Nach dem Aktivieren fügen Nutzer die Kachel unter Anpassen hinzu. Erlaubt sind nur https-Ziele.
+- A category is a heading. Links without a category stay in one list.
+- A link can use a Nextcloud icon, an uploaded image, or a fetched favicon.
+- Only https addresses are allowed. Each link can be switched off.
+- After enabling the app, add the Company links tile under Customize.
 
-**Datenschutz.** Diese App speichert keine Benutzerkonten und sendet keine Daten an den Autor. Ein Klick schickt den Browser an die vom Admin gewählte https-Adresse. Die Antwort setzt Referrer-Policy no-referrer. Das Ziel kann weiterhin die IP-Adresse und die üblichen Browser-Header sehen. Admins müssen diese Ziele in der Datenschutzerklärung der Instanz nennen. Deinstallation löscht Katalog und hochgeladene Icons.]]></description>
-	<version>1.0.0</version>
+**Privacy.** This app stores no user accounts and sends no catalog to the author. Opening a link sends the browser to the https address an administrator saved. The response sets Referrer-Policy no-referrer. The destination can still see the IP address and usual browser headers. List those destinations in the instance privacy notice.
+
+Fetch favicon runs only when an administrator presses the button. The server then requests that site. If the site returns no image, the server requests a favicon for the hostname from Google. Uninstall deletes the catalog and the stored icons.]]></description>
+	<description lang="de"><![CDATA[Ein Katalog von Firmenlinks für die Dashboard-Kachel und die Seite Alle Links.
+
+- Eine Kategorie ist eine Überschrift. Links ohne Kategorie bleiben in einer Liste.
+- Ein Link kann ein Nextcloud-Icon, ein hochgeladenes Bild oder ein geholtes Favicon nutzen.
+- Erlaubt sind nur https-Adressen. Jeder Link lässt sich abschalten.
+- Nach dem Aktivieren fügen Nutzer die Kachel Firmenlinks unter Anpassen hinzu.
+
+**Datenschutz.** Diese App speichert keine Benutzerkonten und sendet keinen Katalog an den Autor. Ein Klick schickt den Browser an die vom Admin gespeicherte https-Adresse. Die Antwort setzt Referrer-Policy no-referrer. Das Ziel kann weiterhin die IP-Adresse und die üblichen Browser-Header sehen. Admins müssen diese Ziele in der Datenschutzerklärung der Instanz nennen.
+
+Favicon holen läuft nur, wenn ein Admin den Knopf drückt. Der Server fragt dann diese Seite an. Liefert die Seite kein Bild, fragt der Server bei Google ein Favicon für den Hostnamen an. Deinstallation löscht Katalog und gespeicherte Icons.]]></description>
+	<version>1.1.0</version>
 	<licence>AGPL-3.0-or-later</licence>
 	<author homepage="https://github.com/codedbyandre">André Wiesehoff</author>
 	<namespace>DashboardLinks</namespace>
@@ -28,6 +42,7 @@
 	<website>https://github.com/codedbyandre/nc-dashboard-links</website>
 	<bugs>https://github.com/codedbyandre/nc-dashboard-links/issues</bugs>
 	<repository type="git">https://github.com/codedbyandre/nc-dashboard-links.git</repository>
+	<screenshot>https://raw.githubusercontent.com/codedbyandre/nc-dashboard-links/main/docs/screenshots/dashboard.png</screenshot>
 	<screenshot>https://raw.githubusercontent.com/codedbyandre/nc-dashboard-links/main/docs/screenshots/admin.png</screenshot>
 	<dependencies>
 		<php min-version="8.2" max-version="8.5"/>

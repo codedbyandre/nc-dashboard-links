@@ -54,4 +54,4 @@ The command prints the detached SHA-512 signature of the tar.gz. The store uploa
 
 ## Screenshots
 
-`appinfo/info.xml` points at `docs/screenshots/admin.png` on `main`. The store downloads that URL. `docs/` is not part of the tarball. A second screenshot, for the Dashboard tile, can be added as another `<screenshot>` before the release is tagged.
+`appinfo/info.xml` points at `docs/screenshots/dashboard.png` and `docs/screenshots/admin.png` on `main`. The store downloads those URLs. `docs/` is not part of the tarball. The URLs answer only after the files are on `main`.

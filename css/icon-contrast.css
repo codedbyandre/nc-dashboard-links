@@ -1,0 +1,19 @@
+/**
+ * SPDX-FileCopyrightText: 2026 André Wiesehoff
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+/**
+ * Nextcloud core icons and the app icon are black artwork.
+ * Dark themes set --background-invert-if-dark to invert(100%).
+ * Attribute selectors cover pages that still have a cached script.
+ */
+.dashboard-links-tile-icon--mono,
+.dashboard-links-tile-icon[src*="/core/img/"],
+.dashboard-links-icon--mono,
+.dashboard-links-item img[src*="/core/img/"],
+.dashboard-links-item img[src*="app-dark.svg"],
+.dashboard-links-icon-preview--mono,
+.dashboard-links-icon-preview[src*="/core/img/"] {
+	filter: var(--background-invert-if-dark);
+}

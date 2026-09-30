@@ -7,12 +7,14 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-/** @var array{pageTitle: string, emptyTitle: string, emptyHint: string, bands: list<array{label: string, links: list<array{title: string, url: string, iconUrl: string, subtitle: string}>}>} $_ */
+/** @var array{pageTitle: string, emptyTitle: string, emptyHint: string, bands: list<array{label: string, links: list<array{title: string, url: string, iconUrl: ?string, iconMonochrome: bool, subtitle: string}>}>} $_ */
 if (function_exists('style')) {
 	style('dashboard_links', 'links');
+	style('dashboard_links', 'icon-contrast');
 }
 ?>
-<div id="dashboard-links-all" class="section">
+<div id="app-content">
+<div id="dashboard-links-all">
 	<h2><?php echo htmlspecialchars($_['pageTitle'], ENT_QUOTES, 'UTF-8'); ?></h2>
 	<?php if ($_['bands'] === []) { ?>
 		<div class="empty-content">
@@ -30,15 +32,16 @@ if (function_exists('style')) {
 				<?php foreach ($band['links'] as $link) { ?>
 					<li class="dashboard-links-item">
 						<a href="<?php echo htmlspecialchars($link['url'], ENT_QUOTES, 'UTF-8'); ?>">
-							<img src="<?php echo htmlspecialchars($link['iconUrl'], ENT_QUOTES, 'UTF-8'); ?>" alt="">
-							<span class="dashboard-links-item-text">
-								<span class="dashboard-links-item-title"><span class="dashboard-links-item-arrow" aria-hidden="true">→</span><?php echo htmlspecialchars($link['title'], ENT_QUOTES, 'UTF-8'); ?></span>
-								<span class="dashboard-links-item-subtitle"><?php echo htmlspecialchars($link['subtitle'], ENT_QUOTES, 'UTF-8'); ?></span>
-							</span>
+							<?php if ($link['iconUrl'] !== null && $link['iconUrl'] !== '') { ?>
+								<img class="dashboard-links-icon<?php echo $link['iconMonochrome'] ? ' dashboard-links-icon--mono' : ''; ?>" src="<?php echo htmlspecialchars($link['iconUrl'], ENT_QUOTES, 'UTF-8'); ?>" alt="">
+							<?php } ?>
+							<span class="dashboard-links-item-title"><?php echo htmlspecialchars($link['title'], ENT_QUOTES, 'UTF-8'); ?></span>
+							<span class="dashboard-links-item-subtitle"><?php echo htmlspecialchars($link['subtitle'], ENT_QUOTES, 'UTF-8'); ?></span>
 						</a>
 					</li>
 				<?php } ?>
 			</ul>
 		</section>
 	<?php } ?>
+</div>
 </div>

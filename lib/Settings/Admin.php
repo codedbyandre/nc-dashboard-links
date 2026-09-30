@@ -43,6 +43,7 @@ final class Admin implements ISettings {
 		);
 
 		Util::addScript(Application::APP_ID, 'dashboard_links-admin');
+		Util::addStyle(Application::APP_ID, 'icon-contrast');
 
 		return new TemplateResponse(Application::APP_ID, 'settings', [
 			'noscript' => $this->l10n->t('JavaScript is required to edit company links.'),

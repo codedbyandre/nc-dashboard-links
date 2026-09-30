@@ -13,7 +13,6 @@ use OCA\DashboardLinks\AppInfo\Application;
 use OCA\DashboardLinks\Links\CatalogStore;
 use OCA\DashboardLinks\Links\LinkId;
 use OCA\DashboardLinks\Links\LinkPresenter;
-use OCA\DashboardLinks\Links\LinkUrls;
 use OCA\DashboardLinks\Links\LinkView;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\FrontpageRoute;
@@ -32,7 +31,6 @@ final class PageController extends Controller {
 		IRequest $request,
 		private readonly CatalogStore $store,
 		private readonly LinkPresenter $presenter,
-		private readonly LinkUrls $urls,
 		private readonly IL10N $l10n,
 	) {
 		parent::__construct($appName, $request);
@@ -74,7 +72,7 @@ final class PageController extends Controller {
 	}
 
 	/**
-	 * @return list<array{label: string, links: list<array{title: string, url: string, iconUrl: string, subtitle: string}>}>
+	 * @return list<array{label: string, links: list<array{title: string, url: string, iconUrl: ?string, iconMonochrome: bool, subtitle: string}>}>
 	 */
 	private function bands(): array {
 		$catalog = $this->store->current();
@@ -84,14 +82,14 @@ final class PageController extends Controller {
 			if ($views === []) {
 				continue;
 			}
-			$defaultIcon = $this->urls->defaultIconUrl();
 			$bands[] = [
 				'label' => $section['label'],
 				'links' => array_map(
 					static fn (LinkView $view): array => [
 						'title' => $view->title,
 						'url' => $view->href,
-						'iconUrl' => $view->icon->imageUrl($defaultIcon),
+						'iconUrl' => $view->icon->tileUrl(),
+						'iconMonochrome' => $view->icon->tileUrl() !== null && $view->icon->monochrome(),
 						'subtitle' => $view->subtitle,
 					],
 					$views,

@@ -6,25 +6,12 @@
 <template>
 	<NcSettingsSection
 		:name="t('dashboard_links', 'Company links')"
-		:description="t('dashboard_links', 'Links stay in one list. Add a category only when you want a named group.')">
+		:description="t('dashboard_links', 'Links sit under their category. Links without a category stay in Default.')">
 		<NcNoteCard type="info">
-			{{ t('dashboard_links', 'Opening a link sends the user\'s browser to that address. The response sets Referrer-Policy no-referrer. The destination can still see the IP address and usual browser headers. List those destinations in your instance privacy notice.') }}
-		</NcNoteCard>
-		<NcNoteCard v-if="savedNotice" type="success">
-			{{ savedNotice }}
+			{{ t('dashboard_links', 'Opening a link sends the user\'s browser to that address. The response sets Referrer-Policy no-referrer. The destination can still see the IP address and usual browser headers. List those destinations in your instance privacy notice. Fetch favicon requests that site from this server. If the site returns no image, this server asks Google for a favicon of the hostname.') }}
 		</NcNoteCard>
 		<NcNoteCard v-if="staleNotice" type="warning">
 			{{ t('dashboard_links', 'The catalog was changed. The editor now shows the saved catalog.') }}
-		</NcNoteCard>
-		<NcNoteCard v-if="fieldErrors.length > 0" type="error">
-			<ul class="dashboard-links-notes">
-				<li v-for="(error, errorIndex) in fieldErrors" :key="errorIndex">
-					{{ formatFieldError(error) }}
-				</li>
-			</ul>
-		</NcNoteCard>
-		<NcNoteCard v-if="saveError" type="error">
-			{{ saveError }}
 		</NcNoteCard>
 		<NcNoteCard v-if="iconError" type="error">
 			{{ iconError }}
@@ -39,95 +26,70 @@
 			</NcButton>
 		</div>
 
-		<section class="dashboard-links-lane">
-			<h3>{{ t('dashboard_links', 'Categories') }}</h3>
-			<p class="dashboard-links-hint">
-				{{ t('dashboard_links', 'Links without a category stay in the default list.') }}
+		<section class="dashboard-links-group">
+			<h3>{{ t('dashboard_links', 'Default') }}</h3>
+			<p class="dashboard-links-kicker">{{ t('dashboard_links', 'Links') }}</p>
+			<p v-if="linkIndicesFor(null).length === 0" class="dashboard-links-empty">
+				{{ t('dashboard_links', 'No links in this group yet.') }}
 			</p>
-			<ul class="dashboard-links-list">
-				<li v-for="(category, categoryIndex) in catalog.categories" :key="category.id" class="dashboard-links-row">
-					<NcTextField
-						class="dashboard-links-title"
-						:label="t('dashboard_links', 'Category')"
-						:modelValue="category.title"
-						@update:modelValue="setCategoryTitle(category, $event)" />
-					<NcButton variant="tertiary" @click="removeCategory(categoryIndex)">
-						{{ t('dashboard_links', 'Remove') }}
-					</NcButton>
-				</li>
-			</ul>
-			<NcButton @click="addCategory">
-				{{ t('dashboard_links', 'Add category') }}
-			</NcButton>
-		</section>
-
-		<section class="dashboard-links-lane">
-			<h3>{{ t('dashboard_links', 'Links') }}</h3>
-			<ul class="dashboard-links-list">
-				<li v-for="(row, index) in catalog.links" :key="row.id" class="dashboard-links-row">
+			<ul v-else class="dashboard-links-list">
+				<li
+					v-for="index in linkIndicesFor(null)"
+					:key="catalog.links[index].id"
+					class="dashboard-links-row"
+					:class="{ 'dashboard-links-row--invalid': rowInvalid(index) }">
 					<NcTextField
 						class="dashboard-links-title"
 						:label="t('dashboard_links', 'Title')"
-						:modelValue="row.title"
-						@update:modelValue="setRowTitle(row, $event)" />
+						:modelValue="catalog.links[index].title"
+						@update:modelValue="setRowTitle(catalog.links[index], $event)" />
 					<NcTextField
 						class="dashboard-links-href"
 						:label="t('dashboard_links', 'URL')"
-						:modelValue="row.href"
+						:modelValue="catalog.links[index].href"
 						placeholder="https://"
-						@update:modelValue="setRowHref(row, $event)" />
+						@update:modelValue="setRowHref(catalog.links[index], $event)" />
 					<div class="dashboard-links-icon">
-						<p class="dashboard-links-hint">
-							{{ t('dashboard_links', 'Choose a Nextcloud icon or upload one.') }}
-						</p>
-						<div class="dashboard-links-icon-choices" role="group" :aria-label="t('dashboard_links', 'Nextcloud icon')">
-							<button
-								v-for="choice in coreIcons"
-								:key="choice.id"
-								class="dashboard-links-icon-choice"
-								type="button"
-								:aria-pressed="row.icon === choice.id"
-								:aria-label="choice.label"
-								@click="toggleCoreIcon(row, choice.id)">
-								<img :src="choice.url" alt="">
-							</button>
-						</div>
+						<NcSelect
+							class="dashboard-links-icon-select"
+							label="label"
+							:inputLabel="t('dashboard_links', 'Choose an icon.')"
+							:modelValue="iconOption(catalog.links[index].icon)"
+							:options="iconOptions"
+							:clearable="false"
+							@update:modelValue="onIconSelect(catalog.links[index], $event)" />
 						<img
-							v-if="previewUrl(row.icon)"
+							v-if="previewUrl(catalog.links[index].icon)"
 							class="dashboard-links-icon-preview"
-							:src="previewUrl(row.icon) ?? ''"
+							:class="{ 'dashboard-links-icon-preview--mono': isCoreIcon(catalog.links[index].icon) }"
+							:src="previewUrl(catalog.links[index].icon) ?? ''"
 							alt="">
 						<NcButton @click="pickIcon(index)">
-							{{ row.icon && !isCoreIcon(row.icon) ? t('dashboard_links', 'Replace icon') : t('dashboard_links', 'Upload icon') }}
+							{{ catalog.links[index].icon && !isCoreIcon(catalog.links[index].icon) ? t('dashboard_links', 'Replace icon') : t('dashboard_links', 'Upload icon') }}
 						</NcButton>
-						<NcButton v-if="row.icon" variant="tertiary" @click="row.icon = null">
+						<NcButton @click="fetchFavicon(index)">
+							{{ t('dashboard_links', 'Fetch favicon') }}
+						</NcButton>
+						<NcButton v-if="catalog.links[index].icon" variant="tertiary" @click="catalog.links[index].icon = null">
 							{{ t('dashboard_links', 'Remove icon') }}
 						</NcButton>
 					</div>
 					<NcCheckboxRadioSwitch
 						type="switch"
-						:modelValue="row.enabled"
-						@update:modelValue="row.enabled = $event">
+						:modelValue="catalog.links[index].enabled"
+						@update:modelValue="catalog.links[index].enabled = $event">
 						{{ t('dashboard_links', 'Enabled') }}
 					</NcCheckboxRadioSwitch>
-					<NcSelect
-						v-if="catalog.categories.length > 0"
-						class="dashboard-links-lane-select"
-						:inputLabel="t('dashboard_links', 'Category')"
-						:modelValue="categoryOption(row.categoryId)"
-						:options="categoryOptions"
-						:clearable="false"
-						@update:modelValue="onCategorySelect(row, $event)" />
 					<div class="dashboard-links-row-actions">
 						<NcButton
 							variant="tertiary"
-							:disabled="index === 0"
+							:disabled="!canMoveUp(index)"
 							@click="moveRow(index, -1)">
 							{{ t('dashboard_links', 'Move up') }}
 						</NcButton>
 						<NcButton
 							variant="tertiary"
-							:disabled="index === catalog.links.length - 1"
+							:disabled="!canMoveDown(index)"
 							@click="moveRow(index, 1)">
 							{{ t('dashboard_links', 'Move down') }}
 						</NcButton>
@@ -137,12 +99,120 @@
 					</div>
 				</li>
 			</ul>
-			<NcButton @click="addRow">
+			<NcButton @click="addRow(null)">
 				{{ t('dashboard_links', 'Add link') }}
 			</NcButton>
 		</section>
 
-		<div class="dashboard-links-save">
+		<section
+			v-for="(category, categoryIndex) in catalog.categories"
+			:key="category.id"
+			class="dashboard-links-group dashboard-links-group--category"
+			:class="{ 'dashboard-links-group--invalid': categoryInvalid(categoryIndex) }">
+			<div class="dashboard-links-category-head">
+				<NcTextField
+					class="dashboard-links-title"
+					:label="t('dashboard_links', 'Category')"
+					:modelValue="category.title"
+					@update:modelValue="setCategoryTitle(category, $event)" />
+				<NcButton variant="tertiary" @click="removeCategory(categoryIndex)">
+					{{ t('dashboard_links', 'Remove') }}
+				</NcButton>
+			</div>
+			<p class="dashboard-links-kicker">{{ t('dashboard_links', 'Links') }}</p>
+			<p v-if="linkIndicesFor(category.id).length === 0" class="dashboard-links-empty">
+				{{ t('dashboard_links', 'No links in this group yet.') }}
+			</p>
+			<ul v-else class="dashboard-links-list">
+				<li
+					v-for="index in linkIndicesFor(category.id)"
+					:key="catalog.links[index].id"
+					class="dashboard-links-row"
+					:class="{ 'dashboard-links-row--invalid': rowInvalid(index) }">
+					<NcTextField
+						class="dashboard-links-title"
+						:label="t('dashboard_links', 'Title')"
+						:modelValue="catalog.links[index].title"
+						@update:modelValue="setRowTitle(catalog.links[index], $event)" />
+					<NcTextField
+						class="dashboard-links-href"
+						:label="t('dashboard_links', 'URL')"
+						:modelValue="catalog.links[index].href"
+						placeholder="https://"
+						@update:modelValue="setRowHref(catalog.links[index], $event)" />
+					<div class="dashboard-links-icon">
+						<NcSelect
+							class="dashboard-links-icon-select"
+							label="label"
+							:inputLabel="t('dashboard_links', 'Choose an icon.')"
+							:modelValue="iconOption(catalog.links[index].icon)"
+							:options="iconOptions"
+							:clearable="false"
+							@update:modelValue="onIconSelect(catalog.links[index], $event)" />
+						<img
+							v-if="previewUrl(catalog.links[index].icon)"
+							class="dashboard-links-icon-preview"
+							:class="{ 'dashboard-links-icon-preview--mono': isCoreIcon(catalog.links[index].icon) }"
+							:src="previewUrl(catalog.links[index].icon) ?? ''"
+							alt="">
+						<NcButton @click="pickIcon(index)">
+							{{ catalog.links[index].icon && !isCoreIcon(catalog.links[index].icon) ? t('dashboard_links', 'Replace icon') : t('dashboard_links', 'Upload icon') }}
+						</NcButton>
+						<NcButton @click="fetchFavicon(index)">
+							{{ t('dashboard_links', 'Fetch favicon') }}
+						</NcButton>
+						<NcButton v-if="catalog.links[index].icon" variant="tertiary" @click="catalog.links[index].icon = null">
+							{{ t('dashboard_links', 'Remove icon') }}
+						</NcButton>
+					</div>
+					<NcCheckboxRadioSwitch
+						type="switch"
+						:modelValue="catalog.links[index].enabled"
+						@update:modelValue="catalog.links[index].enabled = $event">
+						{{ t('dashboard_links', 'Enabled') }}
+					</NcCheckboxRadioSwitch>
+					<div class="dashboard-links-row-actions">
+						<NcButton
+							variant="tertiary"
+							:disabled="!canMoveUp(index)"
+							@click="moveRow(index, -1)">
+							{{ t('dashboard_links', 'Move up') }}
+						</NcButton>
+						<NcButton
+							variant="tertiary"
+							:disabled="!canMoveDown(index)"
+							@click="moveRow(index, 1)">
+							{{ t('dashboard_links', 'Move down') }}
+						</NcButton>
+						<NcButton variant="tertiary" @click="removeRow(index)">
+							{{ t('dashboard_links', 'Remove') }}
+						</NcButton>
+					</div>
+				</li>
+			</ul>
+			<NcButton @click="addRow(category.id)">
+				{{ t('dashboard_links', 'Add link') }}
+			</NcButton>
+		</section>
+
+		<div class="dashboard-links-toolbar">
+			<NcButton @click="addCategory">
+				{{ t('dashboard_links', 'Add category') }}
+			</NcButton>
+		</div>
+
+		<div ref="saveAnchor" class="dashboard-links-save">
+			<NcNoteCard v-if="saveError || fieldErrors.length > 0" type="error">
+				<p v-if="saveError">{{ saveError }}</p>
+				<ul v-if="fieldErrors.length > 0" class="dashboard-links-notes">
+					<li v-for="(error, errorIndex) in fieldErrors" :key="errorIndex">
+						{{ formatFieldError(error) }}
+					</li>
+				</ul>
+			</NcNoteCard>
+			<NcNoteCard v-if="savedNotice" type="success">
+				{{ savedNotice }}
+			</NcNoteCard>
 			<NcButton variant="primary" :disabled="saving" @click="save">
 				{{ t('dashboard_links', 'Save') }}
 			</NcButton>
@@ -187,7 +257,7 @@ interface ExternalSite {
 	redirect?: unknown
 }
 
-const DEFAULT_CATEGORY_ID = ''
+const NONE_ICON_ID = 'none'
 
 const catalog = ref(cloneEnvelope(loadState<CatalogEnvelope>('dashboard_links', 'catalog')))
 const externalSitesAvailable = loadState<boolean>('dashboard_links', 'externalSitesAvailable', false)
@@ -203,6 +273,7 @@ const saving = ref(false)
 const importing = ref(false)
 const iconUrls = ref<Record<string, string>>(coreIconUrls(coreIcons))
 const fileInput = ref<HTMLInputElement | null>(null)
+const saveAnchor = ref<HTMLElement | null>(null)
 const pendingIconIndex = ref<number | null>(null)
 
 onMounted(async () => {
@@ -215,13 +286,28 @@ onMounted(async () => {
 	}
 })
 
-const categoryOptions = computed<SelectOption[]>(() => [
-	{ id: DEFAULT_CATEGORY_ID, label: t('dashboard_links', 'Default') },
-	...catalog.value.categories.map((category) => ({
-		id: category.id,
-		label: category.title === '' ? t('dashboard_links', 'Untitled') : category.title,
+const iconOptions = computed<SelectOption[]>(() => [
+	{ id: NONE_ICON_ID, label: t('dashboard_links', 'None') },
+	...coreIcons.map((choice) => ({
+		id: choice.id,
+		label: choice.label || choice.id,
 	})),
 ])
+
+/**
+ * Flat-array indices of links in one category group (null = Default).
+ *
+ * @param categoryId Category id or null for Default
+ */
+function linkIndicesFor(categoryId: string | null): number[] {
+	const indices: number[] = []
+	catalog.value.links.forEach((row, index) => {
+		if (row.categoryId === categoryId) {
+			indices.push(index)
+		}
+	})
+	return indices
+}
 
 /**
  * @param category Editor category
@@ -263,15 +349,36 @@ function coreIconUrls(choices: CoreIconChoice[]): Record<string, string> {
 }
 
 /**
- * Mint a new lowercase UUIDv4 row.
+ * Lowercase UUIDv4. randomUUID exists only in a secure context, so HTTP admin pages use getRandomValues.
  */
-function mintRow(): Row {
+function uuidV4(): string {
+	const webCrypto = globalThis.crypto
+	if (webCrypto !== undefined && typeof webCrypto.randomUUID === 'function') {
+		return webCrypto.randomUUID().toLowerCase()
+	}
+	if (webCrypto === undefined || typeof webCrypto.getRandomValues !== 'function') {
+		throw new Error('crypto.getRandomValues is not available')
+	}
+	const bytes = new Uint8Array(16)
+	webCrypto.getRandomValues(bytes)
+	bytes[6] = (bytes[6] & 0x0f) | 0x40
+	bytes[8] = (bytes[8] & 0x3f) | 0x80
+	const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+	return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+/**
+ * Mint a new lowercase UUIDv4 row.
+ *
+ * @param categoryId Assigned category or null for Default
+ */
+function mintRow(categoryId: string | null = null): Row {
 	return {
-		id: crypto.randomUUID().toLowerCase(),
+		id: uuidV4(),
 		title: '',
 		href: '',
 		icon: null,
-		categoryId: null,
+		categoryId,
 		enabled: true,
 	}
 }
@@ -283,7 +390,7 @@ function mintRow(): Row {
  */
 function cloneCategory(row: Partial<Category>): Category {
 	return {
-		id: typeof row.id === 'string' ? row.id : crypto.randomUUID().toLowerCase(),
+		id: typeof row.id === 'string' ? row.id : uuidV4(),
 		title: typeof row.title === 'string' ? row.title : '',
 	}
 }
@@ -295,7 +402,7 @@ function cloneCategory(row: Partial<Category>): Category {
  */
 function cloneRow(row: Partial<Row>): Row {
 	return {
-		id: typeof row.id === 'string' ? row.id : crypto.randomUUID().toLowerCase(),
+		id: typeof row.id === 'string' ? row.id : uuidV4(),
 		title: typeof row.title === 'string' ? row.title : '',
 		href: typeof row.href === 'string' ? row.href : '',
 		icon: typeof row.icon === 'string' && row.icon !== '' ? row.icon : null,
@@ -338,6 +445,10 @@ function wireRow(row: Row): Row {
  *
  * @param envelope Editor catalog
  */
+function blankLink(row: Row): boolean {
+	return row.title.trim() === '' && row.href.trim() === ''
+}
+
 function wireEnvelope(envelope: CatalogEnvelope): CatalogEnvelope {
 	return {
 		revision: envelope.revision,
@@ -345,15 +456,36 @@ function wireEnvelope(envelope: CatalogEnvelope): CatalogEnvelope {
 			id: category.id,
 			title: category.title,
 		})),
-		links: envelope.links.map(wireRow),
+		links: envelope.links.filter((row) => !blankLink(row)).map(wireRow),
 	}
 }
 
 /**
- * Append an empty link to the default list.
+ * Insert after the last link of that category group in the flat array.
+ *
+ * @param categoryId Category id or null for Default
  */
-function addRow(): void {
-	catalog.value.links.push(mintRow())
+function addRow(categoryId: string | null): void {
+	const row = mintRow(categoryId)
+	const last = lastIndexFor(categoryId)
+	if (last === -1) {
+		catalog.value.links.push(row)
+		return
+	}
+	catalog.value.links.splice(last + 1, 0, row)
+}
+
+/**
+ * @param categoryId Category id or null for Default
+ */
+function lastIndexFor(categoryId: string | null): number {
+	let last = -1
+	catalog.value.links.forEach((row, index) => {
+		if (row.categoryId === categoryId) {
+			last = index
+		}
+	})
+	return last
 }
 
 /**
@@ -365,26 +497,63 @@ function removeRow(index: number): void {
 
 /**
  * @param index Row index
+ */
+function canMoveUp(index: number): boolean {
+	const row = catalog.value.links[index]
+	if (row === undefined) {
+		return false
+	}
+	const indices = linkIndicesFor(row.categoryId)
+	return indices.indexOf(index) > 0
+}
+
+/**
+ * @param index Row index
+ */
+function canMoveDown(index: number): boolean {
+	const row = catalog.value.links[index]
+	if (row === undefined) {
+		return false
+	}
+	const indices = linkIndicesFor(row.categoryId)
+	const pos = indices.indexOf(index)
+	return pos >= 0 && pos < indices.length - 1
+}
+
+/**
+ * Reorder within the same categoryId group only.
+ *
+ * @param index Row index
  * @param direction -1 up, 1 down
  */
 function moveRow(index: number, direction: -1 | 1): void {
-	const next = index + direction
-	const rows = catalog.value.links
-	if (next < 0 || next >= rows.length) {
+	const row = catalog.value.links[index]
+	if (row === undefined) {
 		return
 	}
-	const copy = [...rows]
-	const [row] = copy.splice(index, 1)
-	copy.splice(next, 0, row)
+	const indices = linkIndicesFor(row.categoryId)
+	const pos = indices.indexOf(index)
+	const swapWith = indices[pos + direction]
+	if (swapWith === undefined) {
+		return
+	}
+	const copy = [...catalog.value.links]
+	const current = copy[index]
+	const other = copy[swapWith]
+	if (current === undefined || other === undefined) {
+		return
+	}
+	copy[index] = other
+	copy[swapWith] = current
 	catalog.value.links = copy
 }
 
 /**
- * Append a named category. Links stay in the default list until assigned.
+ * Append a named category.
  */
 function addCategory(): void {
 	catalog.value.categories.push({
-		id: crypto.randomUUID().toLowerCase(),
+		id: uuidV4(),
 		title: t('dashboard_links', 'New category'),
 	})
 }
@@ -407,23 +576,24 @@ function removeCategory(index: number): void {
 }
 
 /**
- * Select option for the row's category, or Default.
- *
- * @param categoryId Assigned category or null
+ * @param icon Stored file name, core: id, or null
  */
-function categoryOption(categoryId: string | null): SelectOption {
-	const id = categoryId ?? DEFAULT_CATEGORY_ID
-	return categoryOptions.value.find((option) => option.id === id)
-		?? { id: DEFAULT_CATEGORY_ID, label: t('dashboard_links', 'Default') }
+function iconOption(icon: string | null): SelectOption {
+	if (icon !== null && isCoreIcon(icon)) {
+		return iconOptions.value.find((option) => option.id === icon)
+			?? { id: icon, label: icon }
+	}
+	return iconOptions.value.find((option) => option.id === NONE_ICON_ID)
+		?? { id: NONE_ICON_ID, label: t('dashboard_links', 'None') }
 }
 
 /**
  * @param row Editor row
  * @param selected NcSelect value
  */
-function onCategorySelect(row: Row, selected: unknown): void {
+function onIconSelect(row: Row, selected: unknown): void {
 	const id = selectedOptionId(selected)
-	row.categoryId = id === null || id === DEFAULT_CATEGORY_ID ? null : id
+	row.icon = id === null || id === NONE_ICON_ID ? null : id
 }
 
 /**
@@ -447,16 +617,6 @@ function isCoreIcon(icon: string | null): boolean {
 }
 
 /**
- * Toggle a Nextcloud icon on the row.
- *
- * @param row Editor row
- * @param iconId core: allowlisted id
- */
-function toggleCoreIcon(row: Row, iconId: string): void {
-	row.icon = row.icon === iconId ? null : iconId
-}
-
-/**
  * @param icon Stored file name or core: id
  */
 function previewUrl(icon: string | null): string | null {
@@ -475,6 +635,25 @@ function previewUrl(icon: string | null): string | null {
 function pickIcon(index: number): void {
 	pendingIconIndex.value = index
 	fileInput.value?.click()
+}
+
+/**
+ * Apply a stored icon name and optional URL onto a row.
+ *
+ * @param index Row index
+ * @param icon Stored file name
+ * @param url Preview URL when the server sent one
+ */
+function applyStoredIcon(index: number, icon: string, url: unknown): void {
+	const row = catalog.value.links[index]
+	if (row === undefined) {
+		return
+	}
+	row.icon = icon
+	if (typeof url === 'string') {
+		iconUrls.value = { ...iconUrls.value, [icon]: url }
+	}
+	iconError.value = null
 }
 
 /**
@@ -507,20 +686,51 @@ async function onIconPicked(event: Event): Promise<void> {
 			iconError.value = t('dashboard_links', 'The icon could not be uploaded.')
 			return
 		}
-		const row = catalog.value.links[index]
-		if (row === undefined) {
-			return
-		}
-		row.icon = uploaded.icon
-		if (typeof uploaded.url === 'string') {
-			iconUrls.value = { ...iconUrls.value, [uploaded.icon]: uploaded.url }
-		}
-		iconError.value = null
+		applyStoredIcon(index, uploaded.icon, uploaded.url)
 	} catch (error: unknown) {
 		const body = axiosBody(error)
 		const message = body !== null && typeof body === 'object' && 'message' in body && typeof body.message === 'string'
 			? body.message
 			: t('dashboard_links', 'The icon could not be uploaded.')
+		iconError.value = message
+	}
+}
+
+/**
+ * POST /apps/dashboard_links/icons/favicon with the row href.
+ *
+ * @param index Row index
+ */
+async function fetchFavicon(index: number): Promise<void> {
+	const row = catalog.value.links[index]
+	if (row === undefined) {
+		return
+	}
+	const href = row.href.trim()
+	if (href === '' || normalizeHttps(href) === null) {
+		iconError.value = t('dashboard_links', 'The favicon could not be fetched.')
+		return
+	}
+
+	try {
+		await confirmPassword()
+	} catch {
+		return
+	}
+
+	try {
+		const { data } = await axios.post(generateUrl('/apps/dashboard_links/icons/favicon'), { href })
+		const fetched = data as { icon?: unknown, url?: unknown }
+		if (typeof fetched.icon !== 'string') {
+			iconError.value = t('dashboard_links', 'The favicon could not be fetched.')
+			return
+		}
+		applyStoredIcon(index, fetched.icon, fetched.url)
+	} catch (error: unknown) {
+		const body = axiosBody(error)
+		const message = body !== null && typeof body === 'object' && 'message' in body && typeof body.message === 'string'
+			? body.message
+			: t('dashboard_links', 'The favicon could not be fetched.')
 		iconError.value = message
 	}
 }
@@ -535,11 +745,18 @@ async function save(): Promise<void> {
 		return
 	}
 
-	saving.value = true
-	fieldErrors.value = []
+	const local = localProblems()
+	fieldErrors.value = local
 	saveError.value = null
 	savedNotice.value = null
 	staleNotice.value = false
+	if (local.length > 0) {
+		saveError.value = t('dashboard_links', 'The catalog could not be saved.')
+		revealSaveError()
+		return
+	}
+
+	saving.value = true
 	try {
 		const { data } = await axios.put(
 			generateOcsUrl('/apps/dashboard_links/api/v1/catalog'),
@@ -555,9 +772,8 @@ async function save(): Promise<void> {
 		const body = axiosBody(error)
 		if (status === 400) {
 			fieldErrors.value = asFieldErrors(body)
-			if (fieldErrors.value.length === 0) {
-				saveError.value = t('dashboard_links', 'The catalog could not be saved.')
-			}
+			saveError.value = t('dashboard_links', 'The catalog could not be saved.')
+			revealSaveError()
 		} else if (status === 412) {
 			const current = asEnvelope(body)
 			if (current !== null) {
@@ -568,6 +784,7 @@ async function save(): Promise<void> {
 			}
 		} else {
 			saveError.value = t('dashboard_links', 'The catalog could not be saved.')
+			revealSaveError()
 		}
 	} finally {
 		saving.value = false
@@ -678,7 +895,7 @@ async function importExternalSites(): Promise<void> {
 			}
 			existing.add(normalized)
 			catalog.value.links.push({
-				id: crypto.randomUUID().toLowerCase(),
+				id: uuidV4(),
 				title,
 				href,
 				icon: null,
@@ -704,6 +921,51 @@ async function importExternalSites(): Promise<void> {
 	} finally {
 		importing.value = false
 	}
+}
+
+function rowInvalid(index: number): boolean {
+	return fieldErrors.value.some((error) => error.index === index && error.field !== 'category')
+}
+
+function categoryInvalid(index: number): boolean {
+	return fieldErrors.value.some((error) => error.index === index && error.field === 'category')
+}
+
+function localProblems(): FieldError[] {
+	const errors: FieldError[] = []
+	catalog.value.categories.forEach((category, index) => {
+		if (category.title.trim() === '') {
+			errors.push({
+				index,
+				field: 'category',
+				message: t('dashboard_links', 'Enter a category name.'),
+			})
+		}
+	})
+	catalog.value.links.forEach((row, index) => {
+		if (blankLink(row)) {
+			return
+		}
+		if (row.title.trim() === '') {
+			errors.push({
+				index,
+				field: 'title',
+				message: t('dashboard_links', 'Enter a title.'),
+			})
+		}
+		if (normalizeHttps(row.href) === null) {
+			errors.push({
+				index,
+				field: 'href',
+				message: t('dashboard_links', 'Enter an https URL.'),
+			})
+		}
+	})
+	return errors
+}
+
+function revealSaveError(): void {
+	saveAnchor.value?.scrollIntoView({ block: 'nearest' })
 }
 
 /**
@@ -844,18 +1106,67 @@ function axiosBody(error: unknown): unknown {
 .dashboard-links-toolbar,
 .dashboard-links-save {
 	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
 	flex-wrap: wrap;
-	gap: 0.5rem;
+	gap: 0.75rem;
 	margin-block: 1rem;
 }
 
-.dashboard-links-lane {
-	margin-block-end: 2rem;
+.dashboard-links-group {
+	margin-block-end: 1.25rem;
+	padding: 1rem 1rem 0.25rem;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large, 12px);
+	background-color: var(--color-background-hover);
 }
 
-.dashboard-links-hint {
-	margin: 0 0 0.75rem;
+.dashboard-links-group--category {
+	border-inline-start: 4px solid var(--color-primary-element);
+}
+
+.dashboard-links-group--invalid {
+	border-color: var(--color-error);
+}
+
+.dashboard-links-group h3 {
+	margin: 0;
+	font-size: 1.05rem;
+}
+
+.dashboard-links-kicker {
+	margin: 0.75rem 0 0.5rem;
 	color: var(--color-text-maxcontrast);
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+
+.dashboard-links-empty {
+	margin: 0 0 0.75rem;
+	padding: 0.85rem 1rem;
+	border-radius: var(--border-radius-large, 12px);
+	background-color: var(--color-main-background);
+	color: var(--color-text-maxcontrast);
+}
+
+.dashboard-links-group .dashboard-links-list {
+	margin-inline-start: 0.25rem;
+	padding: 0.75rem 0.75rem 0.25rem;
+	border-radius: var(--border-radius-large, 12px);
+	background-color: var(--color-main-background);
+}
+
+.dashboard-links-group .dashboard-links-list + .button,
+.dashboard-links-group > .button {
+	margin-block: 0.75rem 0.5rem;
+}
+
+.dashboard-links-category-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 0.75rem 1rem;
+	margin-block-end: 0.75rem;
 }
 
 .dashboard-links-list {
@@ -869,9 +1180,13 @@ function axiosBody(error: unknown): unknown {
 	flex-wrap: wrap;
 	align-items: flex-end;
 	gap: 0.75rem 1rem;
-	margin-block-end: 1rem;
+	margin-block-end: 1.25rem;
 	padding-block-end: 1rem;
-	border-block-end: 1px solid var(--color-border);
+}
+
+.dashboard-links-row--invalid {
+	box-shadow: inset 3px 0 0 var(--color-error);
+	padding-inline-start: 0.75rem;
 }
 
 .dashboard-links-title,
@@ -891,44 +1206,18 @@ function axiosBody(error: unknown): unknown {
 	flex: 1 1 100%;
 }
 
-.dashboard-links-icon-choices {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.35rem;
-}
-
-.dashboard-links-icon-choice {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 36px;
-	height: 36px;
-	padding: 4px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius, 4px);
-	background: var(--color-main-background);
-	cursor: pointer;
-}
-
-.dashboard-links-icon-choice[aria-pressed="true"] {
-	border-color: var(--color-primary-element);
-	outline: 2px solid var(--color-primary-element);
-}
-
-.dashboard-links-icon-choice img,
-.dashboard-links-icon-preview {
-	width: 24px;
-	height: 24px;
-	object-fit: contain;
+.dashboard-links-icon-select {
+	min-width: 12rem;
 }
 
 .dashboard-links-icon-preview {
 	width: 32px;
 	height: 32px;
+	object-fit: contain;
 }
 
-.dashboard-links-lane-select {
-	min-width: 10rem;
+.dashboard-links-icon-preview--mono {
+	filter: var(--background-invert-if-dark);
 }
 
 .hidden-upload-input {
