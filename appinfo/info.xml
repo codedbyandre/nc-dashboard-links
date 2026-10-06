@@ -7,29 +7,33 @@
 	<id>dashboard_links</id>
 	<name>Company links</name>
 	<name lang="de">Firmenlinks</name>
-	<summary>Admin-managed company links on the Dashboard and an All links page</summary>
-	<summary lang="de">Vom Admin gepflegte Firmenlinks auf dem Dashboard und unter Alle Links</summary>
-	<description><![CDATA[One catalog of company links for the Dashboard and the All links page.
+	<summary>The links your organization uses, on the Dashboard and All links</summary>
+	<summary lang="de">Die Links der Organisation, auf dem Dashboard und unter Alle Links</summary>
+	<description><![CDATA[Company links on the Dashboard: the handbook, the help desk, the tools people should open.
 
-- A category is a heading. Links without a category stay in one list.
-- A link can use a Nextcloud icon, an uploaded image, or a fetched favicon.
-- Only https addresses are allowed. Each link can be switched off.
-- After enabling the app, add the Company links tile under Customize.
+An administrator keeps one catalog. The same links appear in the tile and on the All links page.
 
-**Privacy.** This app stores no user accounts and sends no catalog to the author. Opening a link sends the browser to the https address an administrator saved. The response sets Referrer-Policy no-referrer. The destination can still see the IP address and usual browser headers. List those destinations in the instance privacy notice.
+* **Categories** are headings. Links without a category stay in one list. The line under a link is the host.
+* **Icons** come from Nextcloud, from an uploaded image, or from the site's favicon.
+* **https only.** A link can be switched off without deleting it.
+* **Show the tile.** After the app is enabled, each person adds Company links under Customize.
 
-Fetch favicon runs only when an administrator presses the button. The server then requests that site. If the site returns no image, the server requests a favicon for the hostname from Google. Uninstall deletes the catalog and the stored icons.]]></description>
-	<description lang="de"><![CDATA[Ein Katalog von Firmenlinks für die Dashboard-Kachel und die Seite Alle Links.
+**Privacy.** This app stores no user accounts and sends no catalog to the author. Opening a link sends the browser to the https address an administrator saved. The response sets Referrer-Policy to no-referrer. The destination can still see the IP address and the usual browser headers. Name those destinations in the instance privacy notice.
 
-- Eine Kategorie ist eine Überschrift. Links ohne Kategorie bleiben in einer Liste.
-- Ein Link kann ein Nextcloud-Icon, ein hochgeladenes Bild oder ein geholtes Favicon nutzen.
-- Erlaubt sind nur https-Adressen. Jeder Link lässt sich abschalten.
-- Nach dem Aktivieren fügen Nutzer die Kachel Firmenlinks unter Anpassen hinzu.
+Fetch favicon runs only when an administrator presses the button. The server then requests that site. If the site returns no image, the server requests a favicon for the hostname from Google. Removing the app deletes the catalog and the stored icons.]]></description>
+	<description lang="de"><![CDATA[Firmenlinks auf dem Dashboard: Handbuch, Helpdesk, die Werkzeuge, die alle öffnen sollen.
 
-**Datenschutz.** Diese App speichert keine Benutzerkonten und sendet keinen Katalog an den Autor. Ein Klick schickt den Browser an die vom Admin gespeicherte https-Adresse. Die Antwort setzt Referrer-Policy no-referrer. Das Ziel kann weiterhin die IP-Adresse und die üblichen Browser-Header sehen. Admins müssen diese Ziele in der Datenschutzerklärung der Instanz nennen.
+Ein Admin pflegt einen Katalog. Dieselben Links stehen in der Kachel und auf der Seite Alle Links.
 
-Favicon holen läuft nur, wenn ein Admin den Knopf drückt. Der Server fragt dann diese Seite an. Liefert die Seite kein Bild, fragt der Server bei Google ein Favicon für den Hostnamen an. Deinstallation löscht Katalog und gespeicherte Icons.]]></description>
-	<version>1.1.0</version>
+* **Kategorien** sind Überschriften. Links ohne Kategorie bleiben in einer Liste. Unter jedem Link steht der Hostname.
+* **Icons** kommen aus Nextcloud, aus einem hochgeladenen Bild oder als Favicon der Seite.
+* **Nur https.** Ein Link lässt sich abschalten, ohne ihn zu löschen.
+* **Einblenden.** Nach dem Aktivieren fügt jede Person die Kachel Firmenlinks unter Anpassen hinzu.
+
+**Datenschutz.** Diese App speichert keine Benutzerkonten und sendet keinen Katalog an den Autor. Ein Klick schickt den Browser an die https-Adresse, die ein Admin gespeichert hat. Die Antwort setzt Referrer-Policy auf no-referrer. Das Ziel kann weiterhin die IP-Adresse und die üblichen Browser-Header sehen. Diese Ziele gehören in die Datenschutzerklärung der Instanz.
+
+Favicon holen läuft nur, wenn ein Admin den Knopf drückt. Der Server fragt dann diese Seite an. Liefert die Seite kein Bild, fragt der Server bei Google ein Favicon für den Hostnamen an. Beim Entfernen der App werden Katalog und gespeicherte Icons gelöscht.]]></description>
+	<version>1.1.1</version>
 	<licence>AGPL-3.0-or-later</licence>
 	<author homepage="https://github.com/codedbyandre">André Wiesehoff</author>
 	<namespace>DashboardLinks</namespace>

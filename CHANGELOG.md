@@ -10,6 +10,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.1 - 2026-10-06
+
+### Changed
+
+- Store listing leads with what the catalog is for, then categories, icons, https, and the Dashboard tile. The privacy notice stays at the end.
+
 ## 1.1.0 - 2026-09-30
 
 ### Changed

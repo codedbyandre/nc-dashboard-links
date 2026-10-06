@@ -54,4 +54,8 @@ The command prints the detached SHA-512 signature of the tar.gz. The store uploa
 
 ## Screenshots
 
-`appinfo/info.xml` points at `docs/screenshots/dashboard.png` and `docs/screenshots/admin.png` on `main`. The store downloads those URLs. `docs/` is not part of the tarball. The URLs answer only after the files are on `main`.
+`appinfo/info.xml` points at `docs/screenshots/dashboard.png` and `docs/screenshots/admin.png` on `main`. The store does not read those files from the release archive. `docs/` stays out of the tarball. The gallery on apps.nextcloud.com loads each URL through `usercontent.apps.nextcloud.com`, which caches a URL the first time it sees it.
+
+The raw URLs already return the PNGs. The gallery is blank because the mirror saved them as mode `0600` (every screenshot first fetched after about 21 July 2026). The web server cannot read that file and answers HTTP 200 with an empty body. Duplicate Finder's `img/preview.png` is the same kind of raw GitHub URL. It shows because that file was cached earlier, while the cache files were still readable.
+
+Keep these two URLs. A new path is a new cache key, and a new fetch is saved with the same mode, so the gallery stays blank. When [nextcloud/usercontent.apps.nextcloud.com#32](https://github.com/nextcloud/usercontent.apps.nextcloud.com/pull/32) is deployed, the existing cache entries become readable and these screenshots show without another URL change.
