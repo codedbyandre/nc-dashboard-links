@@ -33,7 +33,7 @@ Ein Admin pflegt einen Katalog. Dieselben Links stehen in der Kachel und auf der
 **Datenschutz.** Diese App speichert keine Benutzerkonten und sendet keinen Katalog an den Autor. Ein Klick schickt den Browser an die https-Adresse, die ein Admin gespeichert hat. Die Antwort setzt Referrer-Policy auf no-referrer. Das Ziel kann weiterhin die IP-Adresse und die üblichen Browser-Header sehen. Diese Ziele gehören in die Datenschutzerklärung der Instanz.
 
 Favicon holen läuft nur, wenn ein Admin den Knopf drückt. Der Server fragt dann diese Seite an. Liefert die Seite kein Bild, fragt der Server bei Google ein Favicon für den Hostnamen an. Beim Entfernen der App werden Katalog und gespeicherte Icons gelöscht.]]></description>
-	<version>1.1.1</version>
+	<version>1.1.2</version>
 	<licence>AGPL-3.0-or-later</licence>
 	<author homepage="https://github.com/codedbyandre">André Wiesehoff</author>
 	<namespace>DashboardLinks</namespace>
@@ -46,8 +46,8 @@ Favicon holen läuft nur, wenn ein Admin den Knopf drückt. Der Server fragt dan
 	<website>https://github.com/codedbyandre/nc-dashboard-links</website>
 	<bugs>https://github.com/codedbyandre/nc-dashboard-links/issues</bugs>
 	<repository type="git">https://github.com/codedbyandre/nc-dashboard-links.git</repository>
-	<screenshot>https://raw.githubusercontent.com/codedbyandre/nc-dashboard-links/main/docs/screenshots/dashboard.png</screenshot>
-	<screenshot>https://raw.githubusercontent.com/codedbyandre/nc-dashboard-links/main/docs/screenshots/admin.png</screenshot>
+	<screenshot>https://raw.githubusercontent.com/codedbyandre/nc-dashboard-links/main/docs/screenshots/dashboard-2.png</screenshot>
+	<screenshot>https://raw.githubusercontent.com/codedbyandre/nc-dashboard-links/main/docs/screenshots/admin-2.png</screenshot>
 	<dependencies>
 		<php min-version="8.2" max-version="8.5"/>
 		<nextcloud min-version="33" max-version="35"/>

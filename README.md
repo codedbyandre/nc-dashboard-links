@@ -7,9 +7,9 @@
 
 Admin-managed company links for the Nextcloud Dashboard and an All links page.
 
-![Company links on the Dashboard](docs/screenshots/dashboard.png)
+![Company links on the Dashboard](docs/screenshots/dashboard-2.png)
 
-![Company links in the administration settings](docs/screenshots/admin.png)
+![Company links in the administration settings](docs/screenshots/admin-2.png)
 
 Nextcloud 33 to 35. PHP 8.2 to 8.5. The interface is in English and German.
 
