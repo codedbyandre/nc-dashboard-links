@@ -11,6 +11,7 @@ interface TileLink {
 	href: string
 	iconUrl: string | null
 	iconMonochrome: boolean
+	newTab: boolean
 }
 
 interface TileSection {
@@ -19,6 +20,8 @@ interface TileSection {
 }
 
 interface TileState {
+	iconUrl: string | null
+	iconMonochrome: boolean
 	sections: TileSection[]
 	emptyTitle: string
 	moreLabel: string
@@ -34,6 +37,8 @@ interface InitialStateWindow extends Window {
 }
 
 const EMPTY_TILE: TileState = {
+	iconUrl: null,
+	iconMonochrome: false,
 	sections: [],
 	emptyTitle: '',
 	moreLabel: '',
@@ -107,6 +112,10 @@ function render(tile: TileState): HTMLDivElement {
 			const anchor = document.createElement('a')
 			anchor.className = 'dashboard-links-tile-link'
 			anchor.href = link.href
+			if (link.newTab) {
+				anchor.target = '_blank'
+				anchor.rel = 'noopener noreferrer'
+			}
 			const body = document.createElement('span')
 			body.className = 'dashboard-links-tile-text'
 			body.append(
@@ -155,6 +164,24 @@ function loadTile(): TileState {
 }
 
 /**
+ * The dashboard draws the tile icon as the background of `.icon-dashboard_links`.
+ * Point that rule at the icon an administrator chose. An uploaded image keeps
+ * its colors. Nextcloud artwork stays inverted in dark mode.
+ *
+ * @param tile Tile payload for this user
+ */
+function applyTileIcon(tile: TileState): void {
+	if (tile.iconUrl === null) {
+		return
+	}
+	const style = document.documentElement.style
+	style.setProperty('--dashboard-links-icon', `url(${JSON.stringify(tile.iconUrl)})`)
+	if (!tile.iconMonochrome) {
+		style.setProperty('--dashboard-links-icon-filter', 'none')
+	}
+}
+
+/**
  * Mount once per panel node. A replaced node can mount again.
  *
  * @param el Panel content node
@@ -191,4 +218,5 @@ function boot(attempt: number): void {
 	}
 }
 
+applyTileIcon(loadTile())
 boot(0)

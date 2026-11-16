@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-/** @var array{pageTitle: string, emptyTitle: string, emptyHint: string, bands: list<array{label: string, links: list<array{title: string, url: string, iconUrl: ?string, iconMonochrome: bool, subtitle: string}>}>} $_ */
+/** @var array{pageTitle: string, emptyTitle: string, emptyHint: string, bands: list<array{label: string, links: list<array{title: string, url: string, iconUrl: ?string, iconMonochrome: bool, subtitle: string, newTab: bool}>}>} $_ */
 if (function_exists('style')) {
 	style('dashboard_links', 'links');
 	style('dashboard_links', 'icon-contrast');
@@ -31,7 +31,7 @@ if (function_exists('style')) {
 			<ul class="dashboard-links-list">
 				<?php foreach ($band['links'] as $link) { ?>
 					<li class="dashboard-links-item">
-						<a href="<?php echo htmlspecialchars($link['url'], ENT_QUOTES, 'UTF-8'); ?>">
+						<a href="<?php echo htmlspecialchars($link['url'], ENT_QUOTES, 'UTF-8'); ?>"<?php echo $link['newTab'] ? ' target="_blank" rel="noopener noreferrer"' : ''; ?>>
 							<?php if ($link['iconUrl'] !== null && $link['iconUrl'] !== '') { ?>
 								<img class="dashboard-links-icon<?php echo $link['iconMonochrome'] ? ' dashboard-links-icon--mono' : ''; ?>" src="<?php echo htmlspecialchars($link['iconUrl'], ENT_QUOTES, 'UTF-8'); ?>" alt="">
 							<?php } ?>

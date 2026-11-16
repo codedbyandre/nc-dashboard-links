@@ -44,7 +44,7 @@ final class PageController extends Controller {
 			Application::APP_ID,
 			'links',
 			[
-				'pageTitle' => $this->l10n->t('Company links'),
+				'pageTitle' => $this->store->current()->title() ?? $this->l10n->t('Company links'),
 				'emptyTitle' => $this->l10n->t('No company links'),
 				'emptyHint' => $this->l10n->t('Ask an administrator to add company links.'),
 				'bands' => $this->bands(),
@@ -72,7 +72,7 @@ final class PageController extends Controller {
 	}
 
 	/**
-	 * @return list<array{label: string, links: list<array{title: string, url: string, iconUrl: ?string, iconMonochrome: bool, subtitle: string}>}>
+	 * @return list<array{label: string, links: list<array{title: string, url: string, iconUrl: ?string, iconMonochrome: bool, subtitle: string, newTab: bool}>}>
 	 */
 	private function bands(): array {
 		$catalog = $this->store->current();
@@ -91,6 +91,7 @@ final class PageController extends Controller {
 						'iconUrl' => $view->icon->tileUrl(),
 						'iconMonochrome' => $view->icon->tileUrl() !== null && $view->icon->monochrome(),
 						'subtitle' => $view->subtitle,
+						'newTab' => $view->newTab,
 					],
 					$views,
 				),

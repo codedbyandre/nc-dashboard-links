@@ -21,6 +21,7 @@ final readonly class CompanyLink implements \JsonSerializable {
 		public ?Icon $icon,
 		public ?CategoryId $categoryId,
 		public bool $enabled,
+		public bool $newTab,
 	) {
 		$title = trim($title);
 		$length = mb_strlen($title);
@@ -45,13 +46,7 @@ final readonly class CompanyLink implements \JsonSerializable {
 		$title = self::stringField($row, 'title');
 		$href = self::stringField($row, 'href');
 
-		$icon = null;
-		if (array_key_exists('icon', $row) && $row['icon'] !== null) {
-			if (!is_string($row['icon'])) {
-				throw new InvalidLink('icon', 'icon must be a file name or null');
-			}
-			$icon = Icon::parse($row['icon']);
-		}
+		$icon = Icon::parseNullable($row['icon'] ?? null);
 
 		$categoryId = null;
 		if (array_key_exists('categoryId', $row) && $row['categoryId'] !== null) {
@@ -62,6 +57,15 @@ final readonly class CompanyLink implements \JsonSerializable {
 			throw new InvalidLink('enabled', 'enabled must be a boolean');
 		}
 
+		// Rows stored before 1.2.0 have no newTab. They keep opening in the same tab.
+		$newTab = false;
+		if (array_key_exists('newTab', $row)) {
+			if (!is_bool($row['newTab'])) {
+				throw new InvalidLink('newTab', 'newTab must be a boolean');
+			}
+			$newTab = $row['newTab'];
+		}
+
 		return new self(
 			LinkId::parse($id),
 			$title,
@@ -69,11 +73,12 @@ final readonly class CompanyLink implements \JsonSerializable {
 			$icon,
 			$categoryId,
 			$row['enabled'],
+			$newTab,
 		);
 	}
 
 	/**
-	 * @return array{id: string, title: string, href: string, icon: ?string, categoryId: ?string, enabled: bool}
+	 * @return array{id: string, title: string, href: string, icon: ?string, categoryId: ?string, enabled: bool, newTab: bool}
 	 */
 	#[\Override]
 	public function jsonSerialize(): array {
@@ -84,6 +89,7 @@ final readonly class CompanyLink implements \JsonSerializable {
 			'icon' => $this->icon === null ? null : (string)$this->icon,
 			'categoryId' => $this->categoryId === null ? null : (string)$this->categoryId,
 			'enabled' => $this->enabled,
+			'newTab' => $this->newTab,
 		];
 	}
 

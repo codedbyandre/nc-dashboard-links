@@ -12,11 +12,13 @@ GET /ocs/v2.php/apps/dashboard_links/api/v1/catalog
 PUT /ocs/v2.php/apps/dashboard_links/api/v1/catalog
 ```
 
-The body is `{revision, categories, links}`:
+The body is `{revision, title, icon, categories, links}`:
 
 ```json
 {
   "revision": "3f9a0c1b2d4e",
+  "title": null,
+  "icon": null,
   "categories": [],
   "links": [
     {
@@ -25,13 +27,16 @@ The body is `{revision, categories, links}`:
       "href": "https://intranet.example.com/",
       "icon": "core:places/link.svg",
       "categoryId": null,
-      "enabled": true
+      "enabled": true,
+      "newTab": false
     }
   ]
 }
 ```
 
-A category is `{id, title}`. A link is `{id, title, href, icon, categoryId, enabled}`. `categoryId` is null for the default list. `icon` is null, a stored file name, or a `core:` Nextcloud icon. Do not send `importance`, `featured`, `normal`, or `reference`. Ids are lowercase UUIDv4 minted by the client. Keep the id when editing a row. Mint a new one when adding.
+`title` replaces Company links on the Dashboard tile and on All links. It is null or at most 80 characters. The top-level `icon` replaces the app icon and takes the same values as a link icon. A PUT that leaves out `title` or `icon` sets it to null.
+
+A category is `{id, title}`. A link is `{id, title, href, icon, categoryId, enabled, newTab}`. `categoryId` is null for the default list. `icon` is null, a stored file name, or a `core:` Nextcloud icon. `newTab` opens the link in a new browser tab. It is optional and false when left out. Do not send `importance`, `featured`, `normal`, or `reference`. Ids are lowercase UUIDv4 minted by the client. Keep the id when editing a row. Mint a new one when adding.
 
 `200` returns the saved catalog. Saving the catalog that is already stored succeeds and writes nothing, even if `revision` is stale.
 
@@ -41,6 +46,6 @@ A category is `{id, title}`. A link is `{id, title, href, icon, categoryId, enab
 
 `409` means the stored document could not be read as a catalog. Nothing is written. GET still returns an empty catalog for that document.
 
-`revision` is the first 12 hex characters of SHA-256 over the canonical categories and links. It is not stored as its own config key. A schema 1 catalog is read as the default list. The next save writes schema 2.
+`revision` is the first 12 hex characters of SHA-256 over the canonical title, icon, categories, and links. It is not stored as its own config key. A schema 1 catalog is read as the default list. The next save writes schema 2.
 
 Import from the External sites app runs in the browser. The control is shown only when that app is enabled and has at least one site. An iframe site is stored as `/apps/external/{id}/`. A redirect site is stored as its https URL. Nothing is stored until Save. This app does not read or write the External sites configuration on the server.

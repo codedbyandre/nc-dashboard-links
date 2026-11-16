@@ -39,7 +39,9 @@ occ config:app:set dashboard layout --value "recommendations,spreed,mail,calenda
 
 Open **Administration settings**, then **Company links**.
 
-Each link needs a title and an https address. A category is optional. On the Dashboard and on All links, a category is the heading and the line under a link is the host. Save replaces the whole catalog, up to 200 links and 40 categories.
+Each link needs a title and an https address. A category is optional. On the Dashboard and on All links, a category is the heading and the line under a link is the host. A link opens in the same tab unless **Open in new tab** is on. Save replaces the whole catalog, up to 200 links and 40 categories.
+
+**Title and icon** set what people see on the Dashboard tile and on All links. Without a title, the tile is called Company links and shows the app icon.
 
 Remove the app with `occ app:remove dashboard_links`. That deletes the catalog and uploaded icons.
 

@@ -15,7 +15,8 @@ An administrator keeps one catalog. The same links appear in the tile and on the
 
 * **Categories** are headings. Links without a category stay in one list. The line under a link is the host.
 * **Icons** come from Nextcloud, from an uploaded image, or from the site's favicon.
-* **https only.** A link can be switched off without deleting it.
+* **https only.** A link can be switched off without deleting it, and can open in a new tab.
+* **Your title and icon.** The tile can be called something other than Company links.
 * **Show the tile.** After the app is enabled, each person adds Company links under Customize.
 
 **Privacy.** This app stores no user accounts and sends no catalog to the author. Opening a link sends the browser to the https address an administrator saved. The response sets Referrer-Policy to no-referrer. The destination can still see the IP address and the usual browser headers. Name those destinations in the instance privacy notice.
@@ -27,13 +28,14 @@ Ein Admin pflegt einen Katalog. Dieselben Links stehen in der Kachel und auf der
 
 * **Kategorien** sind Überschriften. Links ohne Kategorie bleiben in einer Liste. Unter jedem Link steht der Hostname.
 * **Icons** kommen aus Nextcloud, aus einem hochgeladenen Bild oder als Favicon der Seite.
-* **Nur https.** Ein Link lässt sich abschalten, ohne ihn zu löschen.
+* **Nur https.** Ein Link lässt sich abschalten, ohne ihn zu löschen, und kann in einem neuen Tab öffnen.
+* **Eigener Titel, eigenes Icon.** Die Kachel muss nicht Firmenlinks heißen.
 * **Einblenden.** Nach dem Aktivieren fügt jede Person die Kachel Firmenlinks unter Anpassen hinzu.
 
 **Datenschutz.** Diese App speichert keine Benutzerkonten und sendet keinen Katalog an den Autor. Ein Klick schickt den Browser an die https-Adresse, die ein Admin gespeichert hat. Die Antwort setzt Referrer-Policy auf no-referrer. Das Ziel kann weiterhin die IP-Adresse und die üblichen Browser-Header sehen. Diese Ziele gehören in die Datenschutzerklärung der Instanz.
 
 Favicon holen läuft nur, wenn ein Admin den Knopf drückt. Der Server fragt dann diese Seite an. Liefert die Seite kein Bild, fragt der Server bei Google ein Favicon für den Hostnamen an. Beim Entfernen der App werden Katalog und gespeicherte Icons gelöscht.]]></description>
-	<version>1.1.2</version>
+	<version>1.2.0</version>
 	<licence>AGPL-3.0-or-later</licence>
 	<author homepage="https://github.com/codedbyandre">André Wiesehoff</author>
 	<namespace>DashboardLinks</namespace>

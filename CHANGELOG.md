@@ -10,6 +10,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.0 - 2026-11-16
+
+### Added
+
+- Open in new tab for each link. The Dashboard tile and All links open that link in a new browser tab. Existing links keep opening in the same tab. Phone and desktop clients decide for themselves how they open a link.
+- Title and icon for the catalog. They replace Company links and the app icon on the Dashboard tile, under Customize, on All links, and for phone and desktop clients. Without a title, the tile is still called Company links.
+- `title` and `icon` in the catalog body, and `newTab` on a link, for `GET` and `PUT` `/ocs/v2.php/apps/dashboard_links/api/v1/catalog`. A `PUT` without `title` or `icon` sets it to null. A link without `newTab` opens in the same tab.
+
+### Changed
+
+- An icon that could not be uploaded or fetched is reported next to that icon, not at the top of the page.
+- Updated the npm and Composer dependencies. Tests run on PHP 8.2 to 8.5.
+
 ## 1.1.2 - 2026-10-12
 
 ### Changed

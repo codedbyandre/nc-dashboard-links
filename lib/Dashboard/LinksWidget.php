@@ -11,6 +11,7 @@ namespace OCA\DashboardLinks\Dashboard;
 
 use OCA\DashboardLinks\AppInfo\Application;
 use OCA\DashboardLinks\Links\CatalogStore;
+use OCA\DashboardLinks\Links\LinkIcon;
 use OCA\DashboardLinks\Links\LinkId;
 use OCA\DashboardLinks\Links\LinkPresenter;
 use OCA\DashboardLinks\Links\LinkUrls;
@@ -50,7 +51,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 
 	#[\Override]
 	public function getTitle(): string {
-		return $this->l10n->t('Company links');
+		return $this->store->current()->title() ?? $this->l10n->t('Company links');
 	}
 
 	#[\Override]
@@ -65,7 +66,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 
 	#[\Override]
 	public function getIconUrl(): string {
-		return $this->urls->defaultIconUrl();
+		return $this->icon()->imageUrl($this->urls->defaultIconUrl());
 	}
 
 	#[\Override]
@@ -95,7 +96,9 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 	 * Grouped tile for the browser. Clients still use the flat {@see getItems()} list.
 	 *
 	 * @return array{
-	 *     sections: list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string, iconMonochrome: bool}>}>,
+	 *     iconUrl: ?string,
+	 *     iconMonochrome: bool,
+	 *     sections: list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string, iconMonochrome: bool, newTab: bool}>}>,
 	 *     emptyTitle: string,
 	 *     moreLabel: string,
 	 *     moreUrl: ?string,
@@ -105,8 +108,11 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 	 */
 	public function tileState(string $userId): array {
 		$visibleCount = count($this->store->current()->visible());
+		$icon = $this->icon();
 
 		return [
+			'iconUrl' => $icon->tileUrl(),
+			'iconMonochrome' => $icon->tileUrl() !== null && $icon->monochrome(),
 			'sections' => $this->tileSections(),
 			'emptyTitle' => $this->l10n->t('No company links configured yet'),
 			'moreLabel' => $this->l10n->t('All links'),
@@ -144,6 +150,11 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 		return [];
 	}
 
+	/** The icon an administrator chose for the tile, or none. */
+	private function icon(): LinkIcon {
+		return $this->presenter->icon($this->store->current()->icon());
+	}
+
 	/** @return list<WidgetItem> */
 	private function page(?string $since, int $limit): array {
 		$catalog = $this->store->current();
@@ -171,7 +182,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 	 * Every visible link. Named categories keep a heading; links without one do not.
 	 * The browser tile scrolls inside the normal dashboard card.
 	 *
-	 * @return list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string, iconMonochrome: bool}>}>
+	 * @return list<array{label: string, links: list<array{title: string, subtitle: string, href: string, iconUrl: ?string, iconMonochrome: bool, newTab: bool}>}>
 	 */
 	private function tileSections(): array {
 		$catalog = $this->store->current();
@@ -189,6 +200,7 @@ final class LinksWidget implements IAPIWidget, IIconWidget, IButtonWidget {
 					'href' => $view->href,
 					'iconUrl' => $view->icon->tileUrl(),
 					'iconMonochrome' => $view->icon->tileUrl() !== null && $view->icon->monochrome(),
+					'newTab' => $view->newTab,
 				];
 			}
 			$sections[] = [

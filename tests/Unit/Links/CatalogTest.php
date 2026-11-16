@@ -170,6 +170,7 @@ final class CatalogTest extends TestCase {
 					null,
 					null,
 					true,
+					false,
 				),
 				new CompanyLink(
 					LinkId::parse(self::WIKI_ID),
@@ -178,6 +179,7 @@ final class CatalogTest extends TestCase {
 					null,
 					null,
 					true,
+					false,
 				),
 			],
 		);
@@ -216,6 +218,124 @@ final class CatalogTest extends TestCase {
 		self::assertNotSame($first->revision(), $renamed->revision());
 		self::assertNotSame($first->revision(), $withCategory->revision());
 		self::assertNotSame($withCategory->revision(), $renamedCategory->revision());
+	}
+
+	public function testRevisionChangesWhenTitleIconOrNewTabChanges(): void {
+		$row = $this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/');
+		$plain = Catalog::parse(['links' => [$row]]);
+		$titled = Catalog::parse(['title' => 'Handbook', 'links' => [$row]]);
+		$withIcon = Catalog::parse(['icon' => 'core:places/files.svg', 'links' => [$row]]);
+		$inNewTab = Catalog::parse(['links' => [['newTab' => true] + $row]]);
+
+		self::assertNotSame($plain->revision(), $titled->revision());
+		self::assertNotSame($plain->revision(), $withIcon->revision());
+		self::assertNotSame($plain->revision(), $inNewTab->revision());
+	}
+
+	public function testRowWithoutNewTabOpensInTheSameTab(): void {
+		$stored = $this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/');
+		$catalog = Catalog::parse([
+			'links' => [
+				$stored,
+				['newTab' => true] + $this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/'),
+			],
+		]);
+
+		self::assertArrayNotHasKey('newTab', $stored);
+		self::assertFalse($catalog->links()[0]->newTab);
+		self::assertTrue($catalog->links()[1]->newTab);
+		self::assertFalse($catalog->links()[0]->jsonSerialize()['newTab']);
+		self::assertTrue($catalog->links()[1]->jsonSerialize()['newTab']);
+	}
+
+	public function testNewTabMustBeABoolean(): void {
+		try {
+			Catalog::parse([
+				'links' => [['newTab' => 'yes'] + $this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/')],
+			]);
+			self::fail('Catalog::parse accepted a newTab that is not a boolean');
+		} catch (InvalidCatalog $e) {
+			self::assertSame(
+				[['index' => 0, 'field' => 'newTab', 'message' => 'newTab must be a boolean']],
+				$e->errors,
+			);
+		}
+	}
+
+	public function testCatalogWithoutTitleOrIconKeepsTheDefaults(): void {
+		$catalog = Catalog::parse(['title' => "  \t ", 'icon' => null]);
+
+		self::assertNull(Catalog::empty()->title());
+		self::assertNull(Catalog::empty()->icon());
+		self::assertNull($catalog->title());
+		self::assertNull($catalog->icon());
+		self::assertNull($catalog->jsonSerialize()['title']);
+		self::assertNull($catalog->jsonSerialize()['icon']);
+	}
+
+	public function testTitleIsTrimmedAndLimitedToEightyCharacters(): void {
+		$longest = str_repeat('ä', Catalog::TITLE_MAX);
+
+		self::assertSame('Handbook', Catalog::parse(['title' => ' Handbook '])->title());
+		self::assertSame($longest, Catalog::parse(['title' => $longest])->title());
+
+		try {
+			Catalog::parse(['title' => $longest . 'ä']);
+			self::fail('Catalog::parse accepted a title of 81 characters');
+		} catch (InvalidCatalog $e) {
+			self::assertSame(
+				[['index' => 0, 'field' => 'catalog', 'message' => 'title must be at most 80 characters']],
+				$e->errors,
+			);
+		}
+	}
+
+	public function testTitleAndIconOfTheWrongTypeAreBothReported(): void {
+		try {
+			Catalog::parse(['title' => 7, 'icon' => 'https://example.com/logo.png']);
+			self::fail('Catalog::parse accepted a numeric title and an icon URL');
+		} catch (InvalidCatalog $e) {
+			self::assertSame(
+				[
+					['index' => 0, 'field' => 'catalog', 'message' => 'title must be a string or null'],
+					['index' => 0, 'field' => 'catalog', 'message' => 'icon must be a stored file name, not a URL'],
+				],
+				$e->errors,
+			);
+		}
+	}
+
+	public function testTitleAndIconSurviveTheStore(): void {
+		$config = new InMemoryAppConfig();
+		$store = new CatalogStore($config);
+
+		$store->replace(
+			Catalog::parse(['title' => 'Handbook', 'icon' => '0123456789abcdef.png']),
+			$store->current()->revision(),
+		);
+		$stored = $config->getValueArray('dashboard_links', 'catalog', [], true);
+		$current = (new CatalogStore($config))->current();
+
+		self::assertSame('Handbook', $stored['title']);
+		self::assertSame('0123456789abcdef.png', $stored['icon']);
+		self::assertSame('Handbook', $current->title());
+		self::assertSame('0123456789abcdef.png', (string)$current->icon());
+	}
+
+	public function testCatalogStoredBeforeTitleAndNewTabExistedStillReads(): void {
+		$config = new InMemoryAppConfig();
+		$config->setValueArray('dashboard_links', 'catalog', [
+			'schema' => 2,
+			'categories' => [],
+			'links' => [$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/')],
+		], true);
+
+		$current = (new CatalogStore($config))->current();
+
+		self::assertNull($current->title());
+		self::assertNull($current->icon());
+		self::assertSame('Intranet', $current->links()[0]->title);
+		self::assertFalse($current->links()[0]->newTab);
 	}
 
 	public function testReplaceSameContentIsNoOpEvenWithStaleRevision(): void {

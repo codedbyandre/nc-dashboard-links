@@ -16,6 +16,7 @@ final readonly class LinkView {
 		public string $subtitle,
 		public string $href,
 		public LinkIcon $icon,
+		public bool $newTab,
 		public string $overlayIconUrl,
 	) {
 	}

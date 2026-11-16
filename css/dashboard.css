@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+/* dashboard.ts sets both properties when an administrator chose an icon. */
 .icon-dashboard_links {
-	background-image: url('../img/app-dark.svg');
-	filter: var(--background-invert-if-dark);
+	background-image: var(--dashboard-links-icon, url('../img/app-dark.svg'));
+	filter: var(--dashboard-links-icon-filter, var(--background-invert-if-dark));
 }
 
 /* Keep this card at the dashboard's content height. A longer list must

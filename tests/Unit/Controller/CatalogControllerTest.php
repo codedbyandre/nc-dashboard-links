@@ -53,6 +53,49 @@ final class CatalogControllerTest extends TestCase {
 		self::assertMatchesRegularExpression('/^[0-9a-f]{12}$/', $data['revision']);
 	}
 
+	public function testPutTitleAndIconAreReturnedAndStored(): void {
+		$response = $this->controller->replace(
+			$this->store->current()->revision(),
+			[],
+			[$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/')],
+			'Handbook',
+			'core:places/files.svg',
+		);
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame('Handbook', $response->getData()['title']);
+		self::assertSame('core:places/files.svg', $response->getData()['icon']);
+		self::assertSame('Handbook', $this->store->current()->title());
+		self::assertSame($response->getData(), $this->controller->show()->getData());
+	}
+
+	public function testPutWithoutTitleAndIconClearsThem(): void {
+		$this->controller->replace($this->store->current()->revision(), [], [], 'Handbook', 'core:places/files.svg');
+
+		$response = $this->controller->replace($this->store->current()->revision());
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertNull($response->getData()['title']);
+		self::assertNull($response->getData()['icon']);
+	}
+
+	public function testPutUnknownIconIs400AndWritesNothing(): void {
+		$response = $this->controller->replace(
+			$this->store->current()->revision(),
+			[],
+			[],
+			'Handbook',
+			'core:actions/delete.svg',
+		);
+
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		self::assertSame(
+			[['index' => 0, 'field' => 'catalog', 'message' => 'icon must be a stored file or a Nextcloud icon']],
+			$response->getData()['errors'],
+		);
+		self::assertNull($this->store->current()->title());
+	}
+
 	public function testPutRowLevelImportanceIs400(): void {
 		$response = $this->controller->replace(
 			$this->store->current()->revision(),
@@ -160,7 +203,7 @@ final class CatalogControllerTest extends TestCase {
 	}
 
 	/**
-	 * @param array{revision: string, categories: list<array<string, mixed>>, links: list<array<string, mixed>>} $envelope
+	 * @param array{revision: string, title: ?string, icon: ?string, categories: list<array<string, mixed>>, links: list<array<string, mixed>>} $envelope
 	 * @return list<string>
 	 */
 	private function titles(array $envelope): array {

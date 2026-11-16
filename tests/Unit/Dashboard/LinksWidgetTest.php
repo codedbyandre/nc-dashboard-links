@@ -190,6 +190,58 @@ final class LinksWidgetTest extends TestCase {
 		);
 	}
 
+	public function testTitleAndIconAreTheAppDefaultsUntilAnAdministratorSetsThem(): void {
+		$tile = $this->widget->tileState('alice');
+
+		self::assertSame('Company links', $this->widget->getTitle());
+		self::assertSame(
+			'https://cloud.example.test/apps/dashboard_links/img/app-dark.svg',
+			$this->widget->getIconUrl(),
+		);
+		self::assertNull($tile['iconUrl']);
+		self::assertFalse($tile['iconMonochrome']);
+	}
+
+	public function testTitleAndUploadedIconReplaceTheAppDefaults(): void {
+		$catalog = Catalog::parse(['title' => 'Handbook', 'icon' => '0123456789abcdef.png']);
+		$this->store->replace($catalog, $this->store->current()->revision());
+
+		$tile = $this->widget->tileState('alice');
+
+		self::assertSame('Handbook', $this->widget->getTitle());
+		self::assertSame(
+			'https://cloud.example.test/apps/dashboard_links/icons/0123456789abcdef.png',
+			$this->widget->getIconUrl(),
+		);
+		self::assertSame($this->widget->getIconUrl(), $tile['iconUrl']);
+		self::assertFalse($tile['iconMonochrome']);
+	}
+
+	public function testNextcloudIconForTheTileIsMonochrome(): void {
+		$catalog = Catalog::parse(['icon' => 'core:places/files.svg']);
+		$this->store->replace($catalog, $this->store->current()->revision());
+
+		$tile = $this->widget->tileState('alice');
+
+		self::assertSame('https://cloud.example.test/apps/core/img/places/files.svg', $tile['iconUrl']);
+		self::assertTrue($tile['iconMonochrome']);
+	}
+
+	public function testTileLinksCarryNewTabPerLink(): void {
+		$catalog = Catalog::parse([
+			'links' => [
+				$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/'),
+				['newTab' => true] + $this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/'),
+			],
+		]);
+		$this->store->replace($catalog, $this->store->current()->revision());
+
+		$links = $this->widget->tileState('alice')['sections'][0]['links'];
+
+		self::assertFalse($links[0]['newTab']);
+		self::assertTrue($links[1]['newTab']);
+	}
+
 	public function testTileIncludesEveryVisibleLink(): void {
 		$this->replaceEightVisible();
 

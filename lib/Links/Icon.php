@@ -17,6 +17,21 @@ final readonly class Icon implements \Stringable {
 	) {
 	}
 
+	/**
+	 * @param mixed $file untrusted wire or storage value
+	 * @throws InvalidLink
+	 */
+	public static function parseNullable(mixed $file): ?self {
+		if ($file === null) {
+			return null;
+		}
+		if (!is_string($file)) {
+			throw new InvalidLink('icon', 'icon must be a file name or null');
+		}
+
+		return self::parse($file);
+	}
+
 	public static function parse(string $file): self {
 		$file = trim($file);
 		if (str_starts_with($file, 'core:')) {

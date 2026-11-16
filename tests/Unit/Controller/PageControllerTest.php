@@ -34,26 +34,13 @@ final class PageControllerTest extends TestCase {
 	private PageController $controller;
 
 	protected function setUp(): void {
-		$store = new CatalogStore(new InMemoryAppConfig());
-		$store->replace(
-			Catalog::parse([
-				'categories' => [],
-				'links' => [
-					$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/'),
-					$this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/'),
-					$this->row(self::DISABLED_ID, 'Hidden', 'https://hidden.example.com/', false),
-				],
-			]),
-			$store->current()->revision(),
-		);
-		$urls = new LinkUrls(new FakeUrlGenerator());
-		$this->controller = new PageController(
-			'dashboard_links',
-			$this->createStub(IRequest::class),
-			$store,
-			new LinkPresenter($urls),
-			new IdentityL10N(),
-		);
+		$this->controller = $this->controllerFor([
+			'links' => [
+				$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/'),
+				$this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/'),
+				$this->row(self::DISABLED_ID, 'Hidden', 'https://hidden.example.com/', false),
+			],
+		]);
 	}
 
 	public function testIndexBandsHaveHostSubtitleAndNoLaneLabel(): void {
@@ -71,27 +58,15 @@ final class PageControllerTest extends TestCase {
 	}
 
 	public function testIndexBandsShowCategoryHeadingAndSubtitle(): void {
-		$store = new CatalogStore(new InMemoryAppConfig());
-		$store->replace(
-			Catalog::parse([
-				'categories' => [
-					['id' => self::TOOLS_ID, 'title' => 'Tools'],
-				],
-				'links' => [
-					$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/', categoryId: self::TOOLS_ID),
-					$this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/'),
-				],
-			]),
-			$store->current()->revision(),
-		);
-		$urls = new LinkUrls(new FakeUrlGenerator());
-		$controller = new PageController(
-			'dashboard_links',
-			$this->createStub(IRequest::class),
-			$store,
-			new LinkPresenter($urls),
-			new IdentityL10N(),
-		);
+		$controller = $this->controllerFor([
+			'categories' => [
+				['id' => self::TOOLS_ID, 'title' => 'Tools'],
+			],
+			'links' => [
+				$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/', categoryId: self::TOOLS_ID),
+				$this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/'),
+			],
+		]);
 
 		$bands = $controller->index()->getParams()['bands'];
 
@@ -99,6 +74,27 @@ final class PageControllerTest extends TestCase {
 		self::assertSame('wiki.example.com', $bands[0]['links'][0]['subtitle']);
 		self::assertSame('intranet.example.com', $bands[1]['links'][0]['subtitle']);
 		self::assertSame('Intranet', $bands[1]['links'][0]['title']);
+	}
+
+	public function testIndexTitleIsCompanyLinksUntilAnAdministratorSetsOne(): void {
+		$custom = $this->controllerFor(['title' => 'Handbook']);
+
+		self::assertSame('Company links', $this->controller->index()->getParams()['pageTitle']);
+		self::assertSame('Handbook', $custom->index()->getParams()['pageTitle']);
+	}
+
+	public function testIndexBandsCarryNewTabPerLink(): void {
+		$controller = $this->controllerFor([
+			'links' => [
+				$this->row(self::INTRANET_ID, 'Intranet', 'https://intranet.example.com/'),
+				['newTab' => true] + $this->row(self::WIKI_ID, 'Wiki', 'https://wiki.example.com/'),
+			],
+		]);
+
+		$links = $controller->index()->getParams()['bands'][0]['links'];
+
+		self::assertFalse($links[0]['newTab']);
+		self::assertTrue($links[1]['newTab']);
 	}
 
 	public function testOpenLinkIs303ToHttpsHref(): void {
@@ -117,6 +113,22 @@ final class PageControllerTest extends TestCase {
 		self::assertInstanceOf(NotFoundResponse::class, $this->controller->open(self::DISABLED_ID));
 		self::assertInstanceOf(NotFoundResponse::class, $this->controller->open(self::UNKNOWN_ID));
 		self::assertInstanceOf(NotFoundResponse::class, $this->controller->open('not-a-uuid'));
+	}
+
+	/**
+	 * @param array<string, mixed> $payload
+	 */
+	private function controllerFor(array $payload): PageController {
+		$store = new CatalogStore(new InMemoryAppConfig());
+		$store->replace(Catalog::parse($payload), $store->current()->revision());
+
+		return new PageController(
+			'dashboard_links',
+			$this->createStub(IRequest::class),
+			$store,
+			new LinkPresenter(new LinkUrls(new FakeUrlGenerator())),
+			new IdentityL10N(),
+		);
 	}
 
 	/**

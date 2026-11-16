@@ -12,30 +12,40 @@ namespace OCA\DashboardLinks\Links;
 final readonly class Catalog implements \JsonSerializable, \Countable {
 	public const MAX_LINKS = 200;
 	public const MAX_CATEGORIES = 40;
+	public const TITLE_MAX = 80;
 
 	private const JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR;
 
 	/**
+	 * @param ?string $title shown instead of the translated "Company links", or null
+	 * @param ?Icon $icon shown instead of the app icon, or null
 	 * @param list<Category> $categories
 	 * @param list<CompanyLink> $links already in display order
 	 */
 	private function __construct(
+		private ?string $title,
+		private ?Icon $icon,
 		private array $categories,
 		private array $links,
 	) {
 	}
 
 	public static function empty(): self {
-		return new self([], []);
+		return new self(null, null, [], []);
 	}
 
 	/**
 	 * @param list<Category> $categories
 	 * @param list<CompanyLink> $links
+	 * @param ?string $title blank counts as null
 	 * @throws InvalidCatalog
 	 */
-	public static function of(array $categories, array $links): self {
+	public static function of(array $categories, array $links, ?string $title = null, ?Icon $icon = null): self {
 		$errors = [];
+		$title = trim($title ?? '');
+		if (mb_strlen($title) > self::TITLE_MAX) {
+			$errors[] = ['index' => 0, 'field' => 'catalog', 'message' => 'title must be at most 80 characters'];
+		}
 		if (count($categories) > self::MAX_CATEGORIES) {
 			$errors[] = ['index' => 0, 'field' => 'categories', 'message' => 'at most 40 categories'];
 		}
@@ -67,7 +77,12 @@ final readonly class Catalog implements \JsonSerializable, \Countable {
 			throw new InvalidCatalog($errors);
 		}
 
-		return new self(array_values($categories), array_values($links));
+		return new self(
+			$title === '' ? null : $title,
+			$icon,
+			array_values($categories),
+			array_values($links),
+		);
 	}
 
 	/**
@@ -82,6 +97,18 @@ final readonly class Catalog implements \JsonSerializable, \Countable {
 		}
 
 		$errors = [];
+		$title = $payload['title'] ?? null;
+		if ($title !== null && !is_string($title)) {
+			$errors[] = ['index' => 0, 'field' => 'catalog', 'message' => 'title must be a string or null'];
+			$title = null;
+		}
+		$icon = null;
+		try {
+			$icon = Icon::parseNullable($payload['icon'] ?? null);
+		} catch (InvalidLink $e) {
+			$errors[] = ['index' => 0, 'field' => 'catalog', 'message' => $e->getMessage()];
+		}
+
 		$categories = [];
 		$seenCategories = [];
 		$rawCategories = $payload['categories'] ?? [];
@@ -132,7 +159,7 @@ final readonly class Catalog implements \JsonSerializable, \Countable {
 			throw new InvalidCatalog($errors);
 		}
 
-		return self::of($categories, $links);
+		return self::of($categories, $links, $title, $icon);
 	}
 
 	/**
@@ -246,6 +273,16 @@ final readonly class Catalog implements \JsonSerializable, \Countable {
 		return null;
 	}
 
+	/** Null keeps the translated "Company links". */
+	public function title(): ?string {
+		return $this->title;
+	}
+
+	/** Null keeps the app icon. */
+	public function icon(): ?Icon {
+		return $this->icon;
+	}
+
 	/** @return list<Category> */
 	public function categories(): array {
 		return $this->categories;
@@ -278,38 +315,34 @@ final readonly class Catalog implements \JsonSerializable, \Countable {
 	}
 
 	public function revision(): string {
-		$payload = [
-			'categories' => [],
-			'links' => [],
-		];
-		foreach ($this->categories as $category) {
-			$payload['categories'][] = $category->jsonSerialize();
-		}
-		foreach ($this->links as $link) {
-			$payload['links'][] = $link->jsonSerialize();
-		}
-
-		return substr(hash('sha256', json_encode($payload, self::JSON_FLAGS)), 0, 12);
+		return substr(hash('sha256', json_encode($this->content(), self::JSON_FLAGS)), 0, 12);
 	}
 
 	/**
-	 * @return array{revision: string, categories: list<array{id: string, title: string}>, links: list<array<string, mixed>>}
+	 * Everything an administrator edits. The stored document and the revision are built from it.
+	 *
+	 * @return array{title: ?string, icon: ?string, categories: list<array{id: string, title: string}>, links: list<array<string, mixed>>}
+	 */
+	public function content(): array {
+		return [
+			'title' => $this->title,
+			'icon' => $this->icon === null ? null : (string)$this->icon,
+			'categories' => array_map(
+				static fn (Category $category): array => $category->jsonSerialize(),
+				$this->categories,
+			),
+			'links' => array_map(
+				static fn (CompanyLink $link): array => $link->jsonSerialize(),
+				$this->links,
+			),
+		];
+	}
+
+	/**
+	 * @return array{revision: string, title: ?string, icon: ?string, categories: list<array{id: string, title: string}>, links: list<array<string, mixed>>}
 	 */
 	#[\Override]
 	public function jsonSerialize(): array {
-		$categories = [];
-		foreach ($this->categories as $category) {
-			$categories[] = $category->jsonSerialize();
-		}
-		$links = [];
-		foreach ($this->links as $link) {
-			$links[] = $link->jsonSerialize();
-		}
-
-		return [
-			'revision' => $this->revision(),
-			'categories' => $categories,
-			'links' => $links,
-		];
+		return ['revision' => $this->revision()] + $this->content();
 	}
 }

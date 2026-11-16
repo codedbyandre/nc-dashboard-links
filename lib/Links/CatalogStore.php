@@ -47,18 +47,10 @@ final class CatalogStore {
 		if ($expectedRevision !== $current->revision()) {
 			throw new StaleCatalog($current);
 		}
-		$categories = [];
-		foreach ($next->categories() as $category) {
-			$categories[] = $category->jsonSerialize();
-		}
-		$links = [];
-		foreach ($next->links() as $link) {
-			$links[] = $link->jsonSerialize();
-		}
 		$this->config->setValueArray(
 			Application::APP_ID,
 			self::KEY,
-			['schema' => self::SCHEMA, 'categories' => $categories, 'links' => $links],
+			['schema' => self::SCHEMA] + $next->content(),
 			true,
 		);
 
@@ -92,6 +84,8 @@ final class CatalogStore {
 		try {
 			return [
 				'catalog' => Catalog::parse([
+					'title' => $doc['title'] ?? null,
+					'icon' => $doc['icon'] ?? null,
 					'categories' => $doc['categories'] ?? [],
 					'links' => $doc['links'] ?? [],
 				]),

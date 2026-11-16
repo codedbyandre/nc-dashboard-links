@@ -13,10 +13,15 @@ export interface Row {
 	icon: string | null
 	categoryId: string | null
 	enabled: boolean
+	newTab: boolean
 }
 
 export interface CatalogEnvelope {
 	revision: string
+	/** Null keeps the translated "Company links" */
+	title: string | null
+	/** Stored file name, `core:` id, or null for the app icon */
+	icon: string | null
 	categories: Category[]
 	links: Row[]
 }
@@ -31,24 +36,4 @@ export interface FieldError {
 	index: number
 	field: string
 	message: string
-}
-
-export interface TileLink {
-	title: string
-	subtitle: string
-	href: string
-}
-
-export interface TileSection {
-	label: string
-	links: TileLink[]
-}
-
-export interface TileState {
-	sections: TileSection[]
-	emptyTitle: string
-	moreLabel: string
-	moreUrl: string | null
-	setupLabel: string
-	setupUrl: string | null
 }

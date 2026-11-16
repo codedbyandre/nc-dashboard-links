@@ -41,10 +41,18 @@ final class CatalogController extends OCSController {
 	 */
 	#[ApiRoute(verb: 'PUT', url: '/api/v1/catalog')]
 	#[PasswordConfirmationRequired]
-	public function replace(string $revision, array $categories = [], array $links = []): DataResponse {
+	public function replace(
+		string $revision,
+		array $categories = [],
+		array $links = [],
+		?string $title = null,
+		?string $icon = null,
+	): DataResponse {
 		try {
 			$saved = $this->store->replace(
 				Catalog::parse([
+					'title' => $title,
+					'icon' => $icon,
 					'categories' => $categories,
 					'links' => $links,
 				]),
