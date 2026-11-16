@@ -20,8 +20,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install libxml and xmllint
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libxml2 libxml2-utils
+      - name: Install xmllint
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libxml2-utils
 
       - name: Download App Store info.xsd
         run: curl -fsSL -o info.xsd https://raw.githubusercontent.com/nextcloud/appstore/master/nextcloudappstore/api/v1/release/info.xsd
