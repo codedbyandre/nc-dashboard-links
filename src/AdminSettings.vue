@@ -903,6 +903,11 @@ function sitesFromExternalPayload(payload: unknown): ExternalSite[] {
 	padding-block-end: 1rem;
 }
 
+/* The title and icon block is a single row with nothing below it. */
+.dashboard-links-group > .dashboard-links-row {
+	margin-block-end: 0;
+}
+
 .dashboard-links-row--invalid {
 	box-shadow: inset 3px 0 0 var(--color-error);
 	padding-inline-start: 0.75rem;
